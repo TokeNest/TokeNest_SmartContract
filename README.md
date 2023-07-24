@@ -1,3 +1,7 @@
+# TokeNest-DEX Project_Smart_Contract
+
+Klaytn-DEX 오픈소스 프로젝트를 Clone해 TokeNest에서 요구하는 기능에 맞게 수정함.
+
 # Klaytn-DEX Project
 
 Open-source DEX for Klaytn. This repository is for smart-contracts part of DEX.
