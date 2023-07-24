@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 // Copied from Klaytn Canonical WKLAY repository 
 // https://github.com/klaytn/canonical-wklay/blob/main/contracts/WKLAY.sol  
 // Copyright (C) 2022 The Klaytn Authors
@@ -31,7 +32,7 @@ contract WKLAY {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
-    function() external payable {
+    receive() external payable {
         deposit();
     }
 
@@ -43,7 +44,7 @@ contract WKLAY {
     function withdraw(uint256 wad) public {
         require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
-        msg.sender.transfer(wad);
+        payable(msg.sender).transfer(wad);
         emit Withdrawal(msg.sender, wad);
     }
 
@@ -68,7 +69,7 @@ contract WKLAY {
     ) public returns (bool) {
         require(balanceOf[src] >= wad);
 
-        if (src != msg.sender && allowance[src][msg.sender] != uint256(-1)) {
+        if (src != msg.sender && allowance[src][msg.sender] != 2**256 - 1) {
             require(allowance[src][msg.sender] >= wad);
             allowance[src][msg.sender] -= wad;
         }

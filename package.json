@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/klaytn/klaytn-dex-contracts#readme",
   "devDependencies": {
-    "@klaytn/contracts": "^1.0.4",
+    "@klaytn/contracts": "^1.0.6",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.0.6",
