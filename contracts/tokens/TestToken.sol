@@ -12,7 +12,7 @@ contract TestToken is KIP7, Ownable {
         _mint(msg.sender, _totalSupply);
     }
 
-     function mint(address account, uint256 amount) public onlyOwner {
+    function mint(address account, uint256 amount) public onlyOwner {
         _mint(account, amount);
     }
 

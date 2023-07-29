@@ -2,7 +2,7 @@ import { DexFactory } from '../../typechain/contracts/swap/DexFactory';
 import { DexPair } from '../../typechain/contracts/swap/DexPair';
 import { KIP7Mock } from '../../typechain/contracts/mocks/KIP7TestMock.sol/KIP7Mock';
 import { DexRouter } from '../../typechain/contracts/swap/DexRouter';
-import { WKLAY } from '../../typechain/contracts/tokens/WKLAY.sol/WKLAY';
+import { WKLAY } from '../../typechain/contracts/tokens/WKLAY';
 
 export interface FactoryFixture {
   factory: DexFactory

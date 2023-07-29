@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
     ],
     overrides: {
       'contracts/tokens/WKLAY.sol': {
-        version: '0.5.16',
+        version: '0.8.12',
         settings: {
           optimizer: {
             enabled: true,

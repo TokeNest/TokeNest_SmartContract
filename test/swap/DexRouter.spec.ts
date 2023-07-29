@@ -846,7 +846,7 @@ describe('DexRouter', () => {
         },
       );
       const receipt = await tx.wait();
-      expect(receipt.gasUsed).to.be.approximately(104314, 100);
+      expect(receipt.gasUsed).to.be.approximately(104746, 100);
     }).retries(3);
   });
 
