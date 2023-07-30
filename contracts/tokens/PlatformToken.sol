@@ -14,9 +14,10 @@ contract PlatformToken is KAccessControl, KIP7Votes, IPlatformToken {
         string memory _symbol,
         address _multisig
     ) KIP7(_name, _symbol) KIP7Permit(_name) {
+
         require(_multisig != address(0), "Multisig cannot be the zero address");
         _grantRole(DEFAULT_ADMIN_ROLE, _multisig);
-        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        //_revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**

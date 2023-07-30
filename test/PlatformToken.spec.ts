@@ -37,6 +37,7 @@ describe('PlatformToken', () => {
   });
 
   it('deploy:fail, multisig cannot be the zero address', async () => {
+    console.log(alice.address);
     // zero Address로 토큰 발행하려 하니 오류뜸.
     const ptn = await ethers.getContractFactory('PlatformToken');
     await expect(ptn.deploy('Platform Token', 'PTN', constants.AddressZero))
