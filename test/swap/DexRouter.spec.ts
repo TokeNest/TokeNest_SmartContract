@@ -23,6 +23,7 @@ describe('DexRouter', () => {
   let WKLAYPartner: Contract;
 
   beforeEach(async () => {
+    // 기본값 세팅
     [wallet] = await ethers.getSigners();
     const fixture = await routerFixture(wallet);
     token0 = fixture.token0;
@@ -36,6 +37,7 @@ describe('DexRouter', () => {
   });
 
   afterEach(async () => {
+    // 라우터 0갠지 테스트 끝나고 계속 체크.
     expect(await ethers.provider.getBalance(router.address)).to.eq(0);
   });
 
@@ -46,20 +48,26 @@ describe('DexRouter', () => {
   }
 
   it('deploy:fail, wrong address parameters', async () => {
+    // factory가 zero Address임.
     const dexRouter = await ethers.getContractFactory('DexRouter');
     await expect(dexRouter.deploy(constants.AddressZero, WKLAY.address))
       .to.be.revertedWithCustomError(dexRouter, 'InvalidAddressParameters')
       .withArgs('DexRouter: FACTORY_ZERO_ADDRESS');
+    // 토큰 자리에 zero Address라 오류ㅡ
     await expect(dexRouter.deploy(factory.address, constants.AddressZero))
       .to.be.revertedWithCustomError(dexRouter, 'InvalidAddressParameters')
       .withArgs('DexRouter: WKLAY_ZERO_ADDRESS');
   });
 
   it('quote', async () => {
+    // quote메서드는 두 토큰 간의 교환비를 구함.
+    // 100과 200의 교환비는 1:2이며, 첫번째 인자는 두번째 인자를 가르킴. 즉 2가 반환
     expect(await router.quote(BigNumber.from(1), BigNumber.from(100), BigNumber.from(200)))
       .to.eq(BigNumber.from(2));
+    // 위 과정과 동일하게 동작. 2:1 이기에 1 반환.
     expect(await router.quote(BigNumber.from(2), BigNumber.from(200), BigNumber.from(100)))
       .to.eq(BigNumber.from(1));
+    // 아래 3 케이스는 교환비 측정이 불가능한 값(0)을 넣어서 오류뜸.
     await expect(router.quote(BigNumber.from(0), BigNumber.from(100), BigNumber.from(200)))
       .to.be.revertedWith(
         'DexLibrary: INSUFFICIENT_AMOUNT',
@@ -75,8 +83,20 @@ describe('DexRouter', () => {
   });
 
   it('getAmountOut', async () => {
+    // getAmountOut은 출력값으로 얻고자 하는 토큰의 수량을 계산하는 메서드.
+    /**
+     * 1. A토큰 2개로 B토큰을 스왑하고 싶음 (amountIN)
+     * 2. 해당 풀에는 A토큰 100개, B토큰 100개가 저장되어 있음 (reserveIn, reserveOut)
+     * 3. A토큰 2개를 B토큰으로 스왑했을 때 얻을 수 있는 B토큰은 1개임.
+     *
+     * x*y=k 공식을 따라야 함.
+     * 위 공식으로 구한다 함.
+     * 1.97이 나오는데 내림처리하나봄. 1로 되네.
+     */
     expect(await router.getAmountOut(BigNumber.from(2), BigNumber.from(100), BigNumber.from(100)))
       .to.eq(BigNumber.from(1));
+
+    // 아래는 계산안되게 0 넣어서 오류뜬것.
     await expect(router.getAmountOut(BigNumber.from(0), BigNumber.from(100), BigNumber.from(100)))
       .to.be.revertedWith(
         'DexLibrary: INSUFFICIENT_INPUT_AMOUNT',
@@ -92,6 +112,16 @@ describe('DexRouter', () => {
   });
 
   it('getAmountIn', async () => {
+    // getAmountIn은 출력값으로 내고자 하는 토큰의 수량을 계산하는 메서드.
+    /**
+     * 1. 교환하고자 하는 B토큰의 수량을 입력 (amountOut)
+     * 2. 해당 풀에는 A토큰 100개, B토큰 100개가 저장되어 있음 (reserveIn, reserveOut)
+     * 3. B토큰 1개를 얻기 위해선 A토큰 2개를 내야 함.
+     *
+     * amountIn = amountOut * reserveIn / (reserveOut - amountOut)
+     * 위 공식으로 구한다 함.
+     * 이건 또 강제올림 하나봄.. 1.01인데 2가되네.
+     */
     expect(await router.getAmountIn(BigNumber.from(1), BigNumber.from(100), BigNumber.from(100)))
       .to.eq(BigNumber.from(2));
     await expect(router.getAmountIn(BigNumber.from(0), BigNumber.from(100), BigNumber.from(100)))
@@ -109,28 +139,36 @@ describe('DexRouter', () => {
   });
 
   it('getAmountsOut', async () => {
+    // router한테 토큰 권한 준다음에 유동성 풀 만듦.
     await token0.approve(router.address, constants.MaxUint256);
     await token1.approve(router.address, constants.MaxUint256);
     await router.addLiquidity(
+      // 사용 토큰 2개랑 가격
       token0.address,
       token1.address,
       ethers.utils.parseEther('10000'),
       ethers.utils.parseEther('10000'),
+      // 최소환 받을 토큰 값 
       0,
       0,
+      // 유동성 풀 토큰을 받을 주소.
       wallet.address,
+      // 유동성 추가 거래의 기한. 무제한으로 함.
       constants.MaxUint256,
     );
 
+    // getAmountsOut메서드의 경로가 잘못됨.
     await expect(router.getAmountsOut(BigNumber.from(2), [token0.address])).to.be.revertedWith(
       'DexLibrary: INVALID_PATH',
     );
+    // 토큰 0 2개 넣었을 때 토큰 1 1개 받는다는 검증. (여기서 1.999 이겠지만, 강제내림해서 1로 하나봄. 아래부터 이얘기 생략.)
     const path = [token0.address, token1.address];
     expect(await router.getAmountsOut(BigNumber.from(2), path))
       .to.deep.eq([BigNumber.from(2), BigNumber.from(1)]);
   });
 
   it('getAmountsIn', async () => {
+    // 위랑 같음.
     await token0.approve(router.address, constants.MaxUint256);
     await token1.approve(router.address, constants.MaxUint256);
     await router.addLiquidity(
@@ -147,12 +185,14 @@ describe('DexRouter', () => {
     await expect(router.getAmountsIn(BigNumber.from(1), [token0.address])).to.be.revertedWith(
       'DexLibrary: INVALID_PATH',
     );
+    // 토큰1 1개 얻기 위해서 토큰0 2개 제출해야 한다 함.
     const path = [token0.address, token1.address];
     expect(await router.getAmountsIn(BigNumber.from(1), path))
       .to.deep.eq([BigNumber.from(2), BigNumber.from(1)]);
   });
 
   it('factory, WKLAY', async () => {
+    // router의 factory랑 WKALY 체크.
     expect(await router.factory()).to.eq(factory.address);
     expect(await router.WKLAY()).to.eq(WKLAY.address);
   });
@@ -164,6 +204,7 @@ describe('DexRouter', () => {
     const expectedLiquidity = ethers.utils.parseEther('2');
     await token0.approve(router.address, constants.MaxUint256);
     await token1.approve(router.address, constants.MaxUint256);
+    // router통해서 풀 생성되는 과정 보여주는듯.
     await expect(
       router.addLiquidity(
         token0.address,
@@ -189,10 +230,12 @@ describe('DexRouter', () => {
       .to.emit(pair, 'Mint')
       .withArgs(router.address, token0Amount, token1Amount);
 
+    // wallet에 pair토큰 잘 갖고 있는지 확인.
     expect(await pair.balanceOf(wallet.address)).to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY));
   });
 
   it('addLiquidityNonExistedPool', async () => {
+    // 위랑 좀 다른거같은데 잘 모르겠네. 새로 token2만들어서 풀 만드는거라 좀 다른듯..?
     const token2 = await (await ethers.getContractFactory('KIP7Mock')).deploy(ethers.utils.parseEther('400'));
     const token0Amount = ethers.utils.parseEther('1');
     const token2Amount = ethers.utils.parseEther('4');
@@ -232,6 +275,7 @@ describe('DexRouter', () => {
       wallet.address,
       constants.MaxUint256,
     );
+    // A토큰 부족? 오류뜨는데 정확하겐 모르겠음.
     await expect(
       router.addLiquidity(
         token0.address,
@@ -245,6 +289,7 @@ describe('DexRouter', () => {
       ),
     ).to.be.revertedWithCustomError(router, 'InsufficientAmount')
       .withArgs('DexRouter: INSUFFICIENT_A_AMOUNT');
+    // 최소 충족 B토큰이 전체니까 오류뜸.
     await expect(
       router.addLiquidity(
         token0.address,
@@ -258,6 +303,7 @@ describe('DexRouter', () => {
       ),
     ).to.be.revertedWithCustomError(router, 'InsufficientAmount')
       .withArgs('DexRouter: INSUFFICIENT_B_AMOUNT');
+    // deadline이 없으니까 오류뜸.
     await expect(
       router.addLiquidity(
         token0.address,
@@ -270,6 +316,7 @@ describe('DexRouter', () => {
         0,
       ),
     ).to.be.revertedWithCustomError(router, 'Expired');
+    // 페어토큰 수령 주소가 없어서 오류뜸.
     await expect(
       router.addLiquidity(
         token0.address,
@@ -289,6 +336,7 @@ describe('DexRouter', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('1');
     const KLAYAmount = ethers.utils.parseEther('4');
     await WKLAYPartner.approve(router.address, constants.MaxUint256);
+    // 개똥같이 파라미터 집어넣네.. 수취주소가 제로라 그런듯.
     await expect(
       router.addLiquidityKLAY(
         WKLAYPartner.address,
@@ -310,6 +358,7 @@ describe('DexRouter', () => {
     const expectedLiquidity = ethers.utils.parseEther('2');
     const WKLAYPairToken0 = await WKLAYPair.token0();
     await WKLAYPartner.approve(router.address, constants.MaxUint256);
+    // addLiquidityKLAY메서드로 KLAY랑 KLATYPartner를 가지는 페어 만들려 함.
     await expect(
       router.addLiquidityKLAY(
         WKLAYPartner.address,
@@ -341,6 +390,8 @@ describe('DexRouter', () => {
       .to.eq(expectedLiquidity.sub(MINIMUM_LIQUIDITY));
 
     const KlayBalance = await ethers.provider.getBalance(wallet.address);
+    // wallet이 갖고 있는 KLAY의 절반만 사용해 추가함.
+    console.log(KlayBalance);
     await router.addLiquidityKLAY(
       WKLAYPartner.address,
       WKLAYPartnerAmount,
@@ -350,18 +401,23 @@ describe('DexRouter', () => {
       constants.MaxUint256,
       { value: KlayBalance.div(2) },
     );
+    // 아래 expect는 KLAYAmount 4개 잘 빠졌는지랑 0.002 사이로 오차 있는지 보는거 같음.
     // extra value gets refunded
     expect(await ethers.provider.getBalance(wallet.address))
+    // approximately는 예상 값과 실제 값의 차이를 지정한 허용 오차 범이 내에서 확인. 0.002 만큼의 오차가 나는지 보는것.
       .to.be.approximately(KlayBalance.sub(KLAYAmount), ethers.utils.parseEther('0.002'));
   });
 
   it('removeLiquidity', async () => {
+    // 풀 생성
     const token0Amount = ethers.utils.parseEther('1');
     const token1Amount = ethers.utils.parseEther('4');
     await addLiquidity(token0Amount, token1Amount);
 
     const expectedLiquidity = ethers.utils.parseEther('2');
+    // router한테 페어 토큰권한 다줌.
     await pair.approve(router.address, constants.MaxUint256);
+    // 대충 비율 맞추면서 풀 삭제함.
     await expect(
       router.removeLiquidity(
         token0.address,
@@ -378,6 +434,7 @@ describe('DexRouter', () => {
       .to.emit(pair, 'Transfer')
       .withArgs(pair.address, constants.AddressZero, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
       .to.emit(token0, 'Transfer')
+      // 이부분은 최소 1:4비율 유지하기 위해 조금 뺀듯. 슬리피지 방지.
       .withArgs(pair.address, wallet.address, token0Amount.sub(500))
       .to.emit(token1, 'Transfer')
       .withArgs(pair.address, wallet.address, token1Amount.sub(2000))
@@ -386,6 +443,7 @@ describe('DexRouter', () => {
       .to.emit(pair, 'Burn')
       .withArgs(router.address, token0Amount.sub(500), token1Amount.sub(2000), wallet.address);
 
+    // 예상치 검증.
     expect(await pair.balanceOf(wallet.address)).to.eq(0);
     const totalSupplyToken0 = await token0.totalSupply();
     const totalSupplyToken1 = await token1.totalSupply();
@@ -440,10 +498,14 @@ describe('DexRouter', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('1');
     const KLAYAmount = ethers.utils.parseEther('4');
     await WKLAYPartner.transfer(WKLAYPair.address, WKLAYPartnerAmount);
+    // klay를 WKLAY로 바꾸는 작업. 0 -> 4
     await WKLAY.deposit({ value: KLAYAmount });
+    // 이후 WKLAYPair에 전송.
     await WKLAY.transfer(WKLAYPair.address, KLAYAmount);
+    // pair 생성.
     await WKLAYPair.mint(wallet.address);
 
+    // remove진행
     const expectedLiquidity = ethers.utils.parseEther('2');
     const WKLAYPairToken0 = await WKLAYPair.token0();
     await WKLAYPair.approve(router.address, constants.MaxUint256);
@@ -482,6 +544,7 @@ describe('DexRouter', () => {
         router.address,
       );
 
+    // 값 예측
     expect(await WKLAYPair.balanceOf(wallet.address)).to.eq(0);
     const totalSupplyWKLAYPartner = await WKLAYPartner.totalSupply();
     const totalSupplyWKLAY = await WKLAY.totalSupply();
@@ -538,6 +601,8 @@ describe('DexRouter', () => {
 
     const expectedLiquidity = ethers.utils.parseEther('2');
 
+    console.log(await WKLAYPair.nonces(wallet.address));
+    // 아래처럼 WKLAYPair에 wallet서명자를 추가해 페어의 보안을 강화.
     const nonce = await WKLAYPair.nonces(wallet.address);
     const digest = await getPermitSignature(
       wallet,
@@ -552,7 +617,7 @@ describe('DexRouter', () => {
       },
     );
     const sig = ethers.utils.splitSignature(digest);
-
+    console.log(await WKLAYPair.nonces(wallet.address));
     await router.removeLiquidityKLAYWithPermit(
       WKLAYPartner.address,
       expectedLiquidity.sub(MINIMUM_LIQUIDITY),
@@ -565,8 +630,11 @@ describe('DexRouter', () => {
       sig.r,
       sig.s,
     );
+    // 이때 wallet의 nonces가 증가함.
+    console.log(await WKLAYPair.nonces(wallet.address));
   });
 
+  // 입력 토큰의 양을 정확히 지정하고 얻을 수 있는 KLAY를 최대화하기 위해 사용.
   describe('swapExactTokensForKLAY', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('5');
     const KLAYAmount = ethers.utils.parseEther('10');
@@ -587,6 +655,7 @@ describe('DexRouter', () => {
         router.swapExactTokensForKLAY(
           swapAmount,
           0,
+          // 삐--
           [WKLAYPartner.address, WKLAYPartner.address],
           wallet.address,
           constants.MaxUint256,
@@ -595,6 +664,7 @@ describe('DexRouter', () => {
       await expect(
         router.swapExactTokensForKLAY(
           swapAmount,
+          // 삐--
           KLAYAmount,
           [WKLAYPartner.address, WKLAY.address],
           wallet.address,
@@ -603,6 +673,7 @@ describe('DexRouter', () => {
       ).to.be.revertedWithCustomError(router, 'InsufficientAmount')
         .withArgs('DexRouter: INSUFFICIENT_OUTPUT_AMOUNT');
       await expect(
+        // 스왑할 양, 최소 아웃풋 수, WKAYPartner로 WKALY를 스왑하고 시픔.
         router.swapExactTokensForKLAY(
           swapAmount,
           0,
@@ -611,10 +682,13 @@ describe('DexRouter', () => {
           constants.MaxUint256,
         ),
       )
+        // WKLAYPartner가 페어로 들어감.
         .to.emit(WKLAYPartner, 'Transfer')
         .withArgs(wallet.address, WKLAYPair.address, swapAmount)
+        // WKLAY는 라우터로 나옴.
         .to.emit(WKLAY, 'Transfer')
         .withArgs(WKLAYPair.address, router.address, expectedOutputAmount)
+        // 개수 Sync조정.
         .to.emit(WKLAYPair, 'Sync')
         .withArgs(
           WKLAYPairToken0 === WKLAYPartner.address
@@ -624,6 +698,7 @@ describe('DexRouter', () => {
             ? KLAYAmount.sub(expectedOutputAmount)
             : WKLAYPartnerAmount.add(swapAmount),
         )
+        // Swap진행.
         .to.emit(WKLAYPair, 'Swap')
         .withArgs(
           router.address,
@@ -635,7 +710,7 @@ describe('DexRouter', () => {
         );
     });
   });
-
+  // 얻고자 하는 다른 토큰의 양을 정확히 지정하고 그에 맞는 최소한의 KLAY를 사용하려고 할 때 사용.
   describe('swapKLAYForExactTokens', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('10');
     const KLAYAmount = ethers.utils.parseEther('5');
@@ -654,6 +729,7 @@ describe('DexRouter', () => {
       await expect(
         router.swapKLAYForExactTokens(
           outputAmount,
+          // 삐--
           [WKLAYPartner.address, WKLAYPartner.address],
           wallet.address,
           constants.MaxUint256,
@@ -669,6 +745,7 @@ describe('DexRouter', () => {
           wallet.address,
           constants.MaxUint256,
           {
+            // 삐--
             value: 5,
           },
         ),
@@ -684,8 +761,10 @@ describe('DexRouter', () => {
           },
         ),
       )
+        // 예상치만큼 WKLAY 페어에 들감.
         .to.emit(WKLAY, 'Transfer')
         .withArgs(router.address, WKLAYPair.address, expectedSwapAmount)
+        // 빼고싶은 값만큼 바로 wallet으로 들감.
         .to.emit(WKLAYPartner, 'Transfer')
         .withArgs(WKLAYPair.address, wallet.address, outputAmount)
         .to.emit(WKLAYPair, 'Sync')
@@ -717,6 +796,7 @@ describe('DexRouter', () => {
           wallet.address,
           constants.MaxUint256,
           {
+            // 스왑할 때 추가적인 KLAY 50배만큼 더 넣음. 이게 없으면 기본값 0.
             value: expectedSwapAmount.mul(50),
           },
         ),
@@ -746,6 +826,7 @@ describe('DexRouter', () => {
     });
   });
 
+  // KLAY의 양을 정확히 지정하고 얻을 수 있는 다른 토큰의 양을 최대화하기 위해 사용.
   describe('swapExactKLAYForTokens', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('10');
     const KLAYAmount = ethers.utils.parseEther('5');
@@ -820,7 +901,7 @@ describe('DexRouter', () => {
           wallet.address,
         );
     });
-
+    // gas비용 테스트하려는거
     it('gas [ @skip-on-coverage ]', async () => {
       const WKLAYPartnerAmount2 = ethers.utils.parseEther('10');
       const KLAYAmount2 = ethers.utils.parseEther('5');
@@ -845,11 +926,13 @@ describe('DexRouter', () => {
           value: swapAmount2,
         },
       );
+      // receipt에서 gas가져오고 100 오차내에 포함되는지 3번 반복.
       const receipt = await tx.wait();
       expect(receipt.gasUsed).to.be.approximately(104746, 100);
     }).retries(3);
   });
 
+  // 얻고자 하는 KLAY의 양을 저오학히 지정하고 이에 맞는 최소한의 입력 토큰을 사용하려고 할 때 사용.
   describe('swapTokensForExactKLAY', () => {
     const WKLAYPartnerAmount = ethers.utils.parseEther('5');
     const KLAYAmount = ethers.utils.parseEther('10');
@@ -918,6 +1001,7 @@ describe('DexRouter', () => {
     });
   });
 
+  // 정확한 입력 토큰의 양을 사용하여 최소한으로 지정된 다른 토큰의 양을 얻을 때 사용
   describe('swapExactTokensForTokens', () => {
     const token0Amount = ethers.utils.parseEther('5');
     const token1Amount = ethers.utils.parseEther('10');
@@ -933,6 +1017,7 @@ describe('DexRouter', () => {
       await expect(
         router.swapExactTokensForTokens(
           swapAmount,
+          // 삐--
           constants.MaxUint256,
           [token0.address, token1.address],
           wallet.address,
@@ -946,6 +1031,7 @@ describe('DexRouter', () => {
           swapAmount,
           0,
           [token0.address, token1.address],
+          // 삐--
           constants.AddressZero,
           constants.MaxUint256,
         ),
@@ -989,6 +1075,7 @@ describe('DexRouter', () => {
     }).retries(3);
   });
 
+  // 최대한으로 지정된 다른 토큰의 양을 얻기 위해 가능한 한 많은 양의 입력 토큰을 사용해 교환을 처리할 때 사용.
   describe('swapTokensForExactTokens', () => {
     const token0Amount = ethers.utils.parseEther('5');
     const token1Amount = ethers.utils.parseEther('10');
@@ -1004,6 +1091,7 @@ describe('DexRouter', () => {
       await expect(
         router.swapTokensForExactTokens(
           outputAmount,
+          // 삐--
           constants.Zero,
           [token0.address, token1.address],
           wallet.address,
@@ -1039,6 +1127,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
   let router: Contract;
   let factory: Contract;
   let pair: Contract;
+  // DTT<>WKLAY 페어 만듦.
   beforeEach(async () => {
     [wallet] = await ethers.getSigners();
     const fixture = await routerFixture(wallet);
@@ -1075,15 +1164,21 @@ describe('DexRouter fee-on-transfer tokens', async () => {
     );
   }
 
+  // 풀을 삭제하며, 수수료를 부과하는 토큰이 올바르게 작동하는지 확인.
   it('removeLiquidityKLAYSupportingFeeOnTransferTokens', async () => {
     const DTTAmount = ethers.utils.parseEther('1');
     const KLAYAmount = ethers.utils.parseEther('4');
     await addLiquidity(DTTAmount, KLAYAmount);
 
+    // pair의 DTT지분
     const DTTInPair = await DTT.balanceOf(pair.address);
+    // pair의 WKLAY지분
     const WKLAYInPair = await WKLAY.balanceOf(pair.address);
+    // wallet의 pair LP토큰
     const liquidity = await pair.balanceOf(wallet.address);
+    // 총 pair 토큰
     const totalSupply = await pair.totalSupply();
+    // 각 토큰의 pair에 얼마나 예치하고 있는지 찾는 로직.
     const NaiveDTTExpected = DTTInPair.mul(liquidity).div(totalSupply);
     const WKLAYExpected = WKLAYInPair.mul(liquidity).div(totalSupply);
 
@@ -1098,6 +1193,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
     );
   });
 
+  // 서명을 통한 풀 삭제 및 수수료 부과 토큰 적용 확인하는 메서드. (서명하면 approve같은거 없이 삭제 ㄱㄴ)
   it('removeLiquidityKLAYWithPermitSupportingFeeOnTransferTokens', async () => {
     const DTTAmount = ethers.utils.parseEther('1')
       .mul(100)
@@ -1143,6 +1239,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
   });
 
   describe('swapExactTokensForTokensSupportingFeeOnTransferTokens', () => {
+    // 수수료와 정확도 고려해 5보다 약간 크게 많듦.
     const DTTAmount = ethers.utils.parseEther('5')
       .mul(100)
       .div(99);
@@ -1172,6 +1269,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
 
       await expect(router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
         amountIn,
+        // 삐--
         constants.MaxUint256,
         [WKLAY.address, DTT.address],
         wallet.address,
@@ -1200,6 +1298,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
 
     await expect(router.swapExactKLAYForTokensSupportingFeeOnTransferTokens(
       0,
+      // 삐--
       [DTT.address, constants.AddressZero],
       wallet.address,
       constants.MaxUint256,
@@ -1209,6 +1308,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
     )).to.be.revertedWithCustomError(router, 'InvalidPath');
 
     await expect(router.swapExactKLAYForTokensSupportingFeeOnTransferTokens(
+      // 삐--
       constants.MaxUint256,
       [WKLAY.address, DTT.address],
       wallet.address,
@@ -1244,6 +1344,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
     await expect(router.swapExactTokensForKLAYSupportingFeeOnTransferTokens(
       swapAmount,
       0,
+      // 삐--
       [WKLAY.address, DTT.address],
       wallet.address,
       constants.MaxUint256,
@@ -1251,6 +1352,7 @@ describe('DexRouter fee-on-transfer tokens', async () => {
 
     await expect(router.swapExactTokensForKLAYSupportingFeeOnTransferTokens(
       swapAmount,
+      // 삐--
       constants.MaxUint256,
       [DTT.address, WKLAY.address],
       wallet.address,
@@ -1323,6 +1425,7 @@ describe('DexRouter fee-on-transfer tokens: reloaded', async () => {
         amountIn,
         0,
         [DTT.address, DTT2.address],
+        // 삐--
         constants.AddressZero,
         constants.MaxUint256,
       )).to.be.revertedWithCustomError(router, 'InvalidAddressParameters')
