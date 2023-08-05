@@ -18,7 +18,8 @@ library TransferHelper {
     function safeTransferFrom(address token, address from, address to, uint value) internal {
         // transferFrom selector `bytes4(keccak256(bytes('transferFrom(address,address,uint256)')))` should be equal to 0x23b872dd
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(bytes4(keccak256(bytes('transferFrom(address,address,uint256)'))), from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+        require(success, 'TrasferHelper: success is failed');
+        require(data.length == 0 || abi.decode(data, (bool)), 'TransferHelper: TRANSFER_FROM_FAILED');
     }
 
     function safeTransferKLAY(address to, uint value) internal {

@@ -48,6 +48,7 @@ describe('DexRouter', () => {
   }
 
   it('deploy:fail, wrong address parameters', async () => {
+    console.log(constants.MaxUint256);
     // factory가 zero Address임.
     const dexRouter = await ethers.getContractFactory('DexRouter');
     await expect(dexRouter.deploy(constants.AddressZero, WKLAY.address))
@@ -146,9 +147,9 @@ describe('DexRouter', () => {
       // 사용 토큰 2개랑 가격
       token0.address,
       token1.address,
-      ethers.utils.parseEther('10000'),
-      ethers.utils.parseEther('10000'),
-      // 최소환 받을 토큰 값 
+      10000,
+      10000,
+      // 최소환 받을 토큰 값
       0,
       0,
       // 유동성 풀 토큰을 받을 주소.
@@ -156,7 +157,7 @@ describe('DexRouter', () => {
       // 유동성 추가 거래의 기한. 무제한으로 함.
       constants.MaxUint256,
     );
-
+    // console.log(await ethers.utils.parseEther('10000'));
     // getAmountsOut메서드의 경로가 잘못됨.
     await expect(router.getAmountsOut(BigNumber.from(2), [token0.address])).to.be.revertedWith(
       'DexLibrary: INVALID_PATH',

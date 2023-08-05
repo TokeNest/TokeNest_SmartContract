@@ -72,7 +72,10 @@ contract DexPair is IDexPair, DexKIP7 {
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DEX: TRANSFER_FAILED");
     }
 
-    constructor() {
+    /**
+    TokeNestUpdate : 페어의 name과 symbol을 지정.
+    */
+    constructor(string memory _name, string memory _symbol) DexKIP7(_name, _symbol) {
         factory = msg.sender;
     }
 

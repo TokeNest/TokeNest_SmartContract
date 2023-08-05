@@ -5,7 +5,7 @@ pragma solidity =0.8.12;
 interface IDexRouter {
     function factory() external view returns (address);
 
-    function WKLAY() external view returns (address);
+    // function WKLAY() external view returns (address);
 
     function addLiquidity(
         address tokenA,
@@ -24,22 +24,6 @@ interface IDexRouter {
             uint256 liquidity
         );
 
-    function addLiquidityKLAY(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountKLAYMin,
-        address to,
-        uint256 deadline
-    )
-        external
-        payable
-        returns (
-            uint256 amountToken,
-            uint256 amountKLAY,
-            uint256 liquidity
-        );
-
     function removeLiquidity(
         address tokenA,
         address tokenB,
@@ -49,42 +33,6 @@ interface IDexRouter {
         address to,
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB);
-
-    function removeLiquidityKLAY(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountKLAYMin,
-        address to,
-        uint256 deadline
-    ) external returns (uint256 amountToken, uint256 amountKLAY);
-
-    function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256 amountA, uint256 amountB);
-
-    function removeLiquidityKLAYWithPermit(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountKLAYMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256 amountToken, uint256 amountKLAY);
 
     function swapExactTokensForTokens(
         uint256 amountIn,
@@ -102,37 +50,7 @@ interface IDexRouter {
         uint256 deadline
     ) external returns (uint256[] memory amounts);
 
-    function swapExactKLAYForTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable returns (uint256[] memory amounts);
-
-    function swapTokensForExactKLAY(
-        uint256 amountOut,
-        uint256 amountInMax,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory amounts);
-
-    function swapExactTokensForKLAY(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory amounts);
-
-    function swapKLAYForExactTokens(
-        uint256 amountOut,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable returns (uint256[] memory amounts);
-
-    function quote(
+   function quote(
         uint256 amountA,
         uint256 reserveA,
         uint256 reserveB
@@ -160,48 +78,133 @@ interface IDexRouter {
         view
         returns (uint256[] memory amounts);
 
-    function removeLiquidityKLAYSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountKLAYMin,
-        address to,
-        uint256 deadline
-    ) external returns (uint256 amountKLAY);
+    // function addLiquidityKLAY(
+    //     address token,
+    //     uint256 amountTokenDesired,
+    //     uint256 amountTokenMin,
+    //     uint256 amountKLAYMin,
+    //     address to,
+    //     uint256 deadline
+    // )
+    //     external
+    //     payable
+    //     returns (
+    //         uint256 amountToken,
+    //         uint256 amountKLAY,
+    //         uint256 liquidity
+    //     );
 
-    function removeLiquidityKLAYWithPermitSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountKLAYMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256 amountKLAY);
 
-    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external;
+    // function removeLiquidityKLAY(
+    //     address token,
+    //     uint256 liquidity,
+    //     uint256 amountTokenMin,
+    //     uint256 amountKLAYMin,
+    //     address to,
+    //     uint256 deadline
+    // ) external returns (uint256 amountToken, uint256 amountKLAY);
 
-    function swapExactKLAYForTokensSupportingFeeOnTransferTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable;
+    // function removeLiquidityWithPermit(
+    //     address tokenA,
+    //     address tokenB,
+    //     uint256 liquidity,
+    //     uint256 amountAMin,
+    //     uint256 amountBMin,
+    //     address to,
+    //     uint256 deadline,
+    //     bool approveMax,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) external returns (uint256 amountA, uint256 amountB);
 
-    function swapExactTokensForKLAYSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external;
+    // function removeLiquidityKLAYWithPermit(
+    //     address token,
+    //     uint256 liquidity,
+    //     uint256 amountTokenMin,
+    //     uint256 amountKLAYMin,
+    //     address to,
+    //     uint256 deadline,
+    //     bool approveMax,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) external returns (uint256 amountToken, uint256 amountKLAY);
+
+
+    // function swapExactKLAYForTokens(
+    //     uint256 amountOutMin,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external payable returns (uint256[] memory amounts);
+
+    // function swapTokensForExactKLAY(
+    //     uint256 amountOut,
+    //     uint256 amountInMax,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external returns (uint256[] memory amounts);
+
+    // function swapExactTokensForKLAY(
+    //     uint256 amountIn,
+    //     uint256 amountOutMin,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external returns (uint256[] memory amounts);
+
+    // function swapKLAYForExactTokens(
+    //     uint256 amountOut,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external payable returns (uint256[] memory amounts);
+
+ 
+    // function removeLiquidityKLAYSupportingFeeOnTransferTokens(
+    //     address token,
+    //     uint256 liquidity,
+    //     uint256 amountTokenMin,
+    //     uint256 amountKLAYMin,
+    //     address to,
+    //     uint256 deadline
+    // ) external returns (uint256 amountKLAY);
+
+    // function removeLiquidityKLAYWithPermitSupportingFeeOnTransferTokens(
+    //     address token,
+    //     uint256 liquidity,
+    //     uint256 amountTokenMin,
+    //     uint256 amountKLAYMin,
+    //     address to,
+    //     uint256 deadline,
+    //     bool approveMax,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) external returns (uint256 amountKLAY);
+
+    // function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    //     uint256 amountIn,
+    //     uint256 amountOutMin,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external;
+
+    // function swapExactKLAYForTokensSupportingFeeOnTransferTokens(
+    //     uint256 amountOutMin,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external payable;
+
+    // function swapExactTokensForKLAYSupportingFeeOnTransferTokens(
+    //     uint256 amountIn,
+    //     uint256 amountOutMin,
+    //     address[] calldata path,
+    //     address to,
+    //     uint256 deadline
+    // ) external;
 }

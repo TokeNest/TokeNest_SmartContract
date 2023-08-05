@@ -4,7 +4,6 @@ import { Contract, BigNumber, constants } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { encodePrice, mineBlock } from '../shared/utilities';
 import { pairFixture } from '../shared/fixtures';
-import { reverse } from 'dns';
 
 const MINIMUM_LIQUIDITY = BigNumber.from(10).pow(3);
 

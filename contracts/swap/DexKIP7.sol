@@ -9,9 +9,15 @@ import '@klaytn/contracts/KIP/utils/introspection/KIP13.sol';
 contract DexKIP7 is IDexKIP7, KIP13 {
     using Address for address;
 
-    string public constant name = 'DEXswap';
-    string public constant symbol = 'KlayLP';
-    uint8 public constant decimals = 18;
+    /**
+    TokeNestUpdate : name과 symbol의 기본 값 변경. name = 'TOKENEST', symbol = 'TokeNestLP'
+    name과 symbol은 생성자를 통해 생성될 때 지정 가능.
+    decimals도 6으로 변경.
+    */
+    string public name = 'TOKENEST';
+    string public symbol = 'TKNLP';
+    uint8 public constant decimals = 6;
+
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
@@ -23,7 +29,12 @@ contract DexKIP7 is IDexKIP7, KIP13 {
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     mapping(address => uint) public nonces;
 
-    constructor() {
+    /**
+    TokeNestUpdate : 생성자를 통해 name과 symbol을 페어 생성 시 결정.
+     */
+    constructor(string memory _name, string memory _symbol) {
+        name = _name;
+        symbol = _symbol;
         uint chainId;
         assembly {
             chainId := chainid()

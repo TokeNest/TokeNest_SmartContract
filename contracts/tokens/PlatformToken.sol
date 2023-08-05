@@ -17,6 +17,9 @@ contract PlatformToken is KAccessControl, KIP7Votes, IPlatformToken {
 
         require(_multisig != address(0), "Multisig cannot be the zero address");
         _grantRole(DEFAULT_ADMIN_ROLE, _multisig);
+        /**
+        TokeNestUpdate : _revokeRole할 시 mint자체가 불가함으로 주석처리.
+         */
         //_revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 

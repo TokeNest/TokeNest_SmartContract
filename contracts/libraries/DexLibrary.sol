@@ -13,6 +13,9 @@ library DexLibrary {
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
+    /**
+    TokeNestUpdate : pairFor의 encodePacked부분에서 오류 발생하나 원인파악 불가함. 이에 TokeNest에서 pairFor는 사용하지 않음.
+     */
     function pairFor(address factory, address tokenA, address tokenB) internal pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(uint160(uint(keccak256(abi.encodePacked(
@@ -23,12 +26,22 @@ library DexLibrary {
             )))));
     }
 
-    // fetches and sorts the reserves for a pair
-    function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
+    /**
+    TokeNestUpdate : pairFor -> IDexPair(pair).getReserves() 변경.
+     */
+    function getReserves(address pair, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IDexPair(pairFor(factory, tokenA, tokenB)).getReserves();
+        (uint reserve0, uint reserve1,) = IDexPair(pair).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
+
+    // // fetches and sorts the reserves for a pair    원본
+    // function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
+    //     (address token0,) = sortTokens(tokenA, tokenB);
+    //     (uint reserve0, uint reserve1,) = IDexPair(pairFor(factory, tokenA, tokenB)).getReserves();
+    //     (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+    // }
+
 
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
     function quote(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
@@ -57,25 +70,31 @@ library DexLibrary {
     }
 
     // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOut(address factory, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {
+    /**
+    TokeNestUpdate : getReserves의 스펙이 변경되며, factory -> pair로 매개변수 및 getReserves호출 값 변경.
+     */
+    function getAmountsOut(address pair, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {
         uint length = path.length;
         require(length >= 2, 'DexLibrary: INVALID_PATH');
         amounts = new uint[](length);
         amounts[0] = amountIn;
         for (uint i = 0; i < length - 1; i++) {
-            (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);
+            (uint reserveIn, uint reserveOut) = getReserves(pair, path[i], path[i + 1]);
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
         }
     }
 
     // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsIn(address factory, uint amountOut, address[] memory path) internal view returns (uint[] memory amounts) {
+    /**
+    TokeNestUpdate : getReserves의 스펙이 변경되며, factory -> pair로 매개변수 및 getReserves호출 값 변경.
+     */
+    function getAmountsIn(address pair, uint amountOut, address[] memory path) internal view returns (uint[] memory amounts) {
         uint length = path.length;
         require(length >= 2, 'DexLibrary: INVALID_PATH');
         amounts = new uint[](length);
         amounts[amounts.length - 1] = amountOut;
         for (uint i = length - 1; i > 0; i--) {
-            (uint reserveIn, uint reserveOut) = getReserves(factory, path[i - 1], path[i]);
+            (uint reserveIn, uint reserveOut) = getReserves(pair, path[i - 1], path[i]);
             amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
         }
     }

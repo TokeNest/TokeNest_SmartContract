@@ -10,7 +10,10 @@ interface IDexFactory {
     function allPairs(uint) external view returns (address pair);
     function allPairsLength() external view returns (uint);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    /**
+     TokeNestUpdate : pair생성 시 name과 symbol을 지정할 수 있도록 수정.
+    */
+    function createPair(address tokenA, address tokenB, string calldata _pairName, string calldata _pairSymbol) external returns (address pair);
 
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;

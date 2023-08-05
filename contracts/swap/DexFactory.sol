@@ -12,7 +12,7 @@ contract DexFactory is IDexFactory {
     address public feeToSetter;
 
     /**
-     * @notice Returns the address of the pair for tokenA and tokenB, if it has been created, else address(0).
+     * @notice Returns the a₩ddress of the pair for tokenA and tokenB, if it has been created, else address(0).
      * @dev tokenA and tokenB are interchangeable. Pair addresses can also be calculated deterministically.
     */
     mapping(address => mapping(address => address)) public getPair;
@@ -69,7 +69,10 @@ contract DexFactory is IDexFactory {
      * @param tokenB Address of the second token.
      * @return pair Address of the created pair.
      */
-    function createPair(address tokenA, address tokenB)
+     /**
+     TokeNestUpdate : pair생성 시 name과 symbol을 지정할 수 있도록 수정.
+      */
+    function createPair(address tokenA, address tokenB, string calldata _pairName, string calldata _pairSymbol)
         external
         returns (address pair)
     {
@@ -83,7 +86,7 @@ contract DexFactory is IDexFactory {
         if (getPair[token0][token1] != address(0))
             revert InvalidAddressParameters("DEX: PAIR_EXISTS"); // single check is sufficient
         pair = address(
-            new DexPair{salt: keccak256(abi.encodePacked(token0, token1))}()
+            new DexPair{salt: keccak256(abi.encodePacked(token0, token1))}(_pairName, _pairSymbol)
         );
         IDexPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
