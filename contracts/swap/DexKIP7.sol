@@ -12,11 +12,10 @@ contract DexKIP7 is IDexKIP7, KIP13 {
     /**
     TokeNestUpdate : name과 symbol의 기본 값 변경. name = 'TOKENEST', symbol = 'TokeNestLP'
     name과 symbol은 생성자를 통해 생성될 때 지정 가능.
-    decimals도 6으로 변경.
     */
     string public name = 'TOKENEST';
     string public symbol = 'TKNLP';
-    uint8 public constant decimals = 6;
+    uint8 public constant decimals = 18;
 
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;

@@ -99,11 +99,8 @@ contract KIP7 is Context, KIP13, IKIP7, IKIP7Metadata {
      * no way affects any of the arithmetic of the contract, including
      * {IKIP7-balanceOf} and {IKIP7-transfer}.
      */
-     /**
-     TokeNestUpdate : TokeNest에선 decimals를 6으로 사용함. 18 -> 6으로 변경.
-     */
     function decimals() public view virtual override returns (uint8) {
-        return 6;
+        return 18;
     }
 
     /**

@@ -15,12 +15,13 @@ export interface PairFixture extends FactoryFixture {
 }
 
 export interface RouterFixture {
-  token0: KIP7Mock
-  token1: KIP7Mock
-  WKLAY: WKLAY
-  WKLAYPartner: KIP7Mock
+  tokenA: KIP7Mock
+  tokenB: KIP7Mock
+  tokenC: KIP7Mock
+  // WKLAY: WKLAY
+  // WKLAYPartner: KIP7Mock
   factory: DexFactory
   router: DexRouter
-  pair: DexPair
-  WKLAYPair: DexPair
+  // pair: DexPair
+  // WKLAYPair: DexPair
 }

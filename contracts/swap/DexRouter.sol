@@ -230,7 +230,7 @@ contract DexRouter is IDexRouter {
         address pair = IDexFactory(factory).getPair(tokenA, tokenB);
         IDexPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         (uint256 amount0, uint256 amount1) = IDexPair(pair).burn(to);
-        (address token0, ) = DexLibrary.sortTokens(tokenA, tokenB);
+        (address token0, ) = DexLibrary.sortTokens(factory, tokenA, tokenB);
         (amountA, amountB) = tokenA == token0
             ? (amount0, amount1)
             : (amount1, amount0);
@@ -282,26 +282,22 @@ contract DexRouter is IDexRouter {
         address _to
     ) internal virtual {
         if(_to == address(0)) revert InvalidAddressParameters("DexRouter: SWAP_TO_ZERO_ADDRESS");
-        uint256 length = path.length - 1;
-        for (uint256 i = 0; i < length; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0, ) = DexLibrary.sortTokens(input, output);
-            uint256 amountOut = amounts[i + 1];
-            (uint256 amount0Out, uint256 amount1Out) = input == token0
-                ? (uint256(0), amountOut)
-                : (amountOut, uint256(0));
-            // address to = i < length - 1
-            //     ? DexLibrary.pairFor(factory, output, path[i + 2])
-            //     : _to;
-            IDexPair(IDexFactory(factory).getPair(input, output)).swap(
-                amount0Out,
-                amount1Out,
-                _to,
-                new bytes(0)
-            );
-        }
+        (address token0, ) = DexLibrary.sortTokens(factory, path[0], path[1]);
+        uint256 amountOut = amounts[1];
+        (uint256 amount0Out, uint256 amount1Out) = path[0] == token0
+            ? (uint256(0), amountOut)
+            : (amountOut, uint256(0));
+        
+        // address to = i < length - 1
+        //     ? DexLibrary.pairFor(factory, output, path[i + 2])
+        //     : _to;
+        IDexPair(IDexFactory(factory).getPair(path[0], path[1])).swap(
+            amount0Out,
+            amount1Out,
+            _to,
+            new bytes(0)
+        );
     }
-
     // original code
     // function _swap(
     //     uint256[] memory amounts,

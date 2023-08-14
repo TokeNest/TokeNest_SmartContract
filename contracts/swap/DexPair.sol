@@ -9,6 +9,8 @@ import "@klaytn/contracts/KIP/interfaces/IKIP7.sol";
 import "../interfaces/IDexFactory.sol";
 import "../interfaces/IDexCallee.sol";
 import "./Errors.sol";
+import "@klaytn/contracts/KIP/interfaces/IKIP7Metadata.sol";
+
 
 contract DexPair is IDexPair, DexKIP7 {
     using UQ112x112 for uint224;

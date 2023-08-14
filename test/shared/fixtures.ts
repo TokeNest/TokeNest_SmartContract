@@ -13,9 +13,9 @@ export async function pairFixture(
 ): Promise<PairFixture> {
   const { factory } = await factoryFixture(deployer);
   const tokenFactory = await ethers.getContractFactory('KIP7Mock');
-  const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
-  const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
-  await factory.createPair(tokenA.address, tokenB.address); // overrides
+  const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  await factory.createPair(tokenA.address, tokenB.address, 'Test', 'TT'); // overrides
   const pairAddress = await factory.getPair(tokenA.address, tokenB.address);
   const pair = await ethers.getContractAt('DexPair', pairAddress);
 
@@ -32,8 +32,9 @@ export async function routerFixture(deployer: SignerWithAddress): Promise<Router
   // deploy tokens
   const tokenFactory = await ethers.getContractFactory('KIP7Mock');
   const WKLAY9Factory = await ethers.getContractFactory('WKLAY');
-  const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
-  const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
+  const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  const tokenC = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
   const WKLAY = await WKLAY9Factory.deploy();
   const WKLAYPartner = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
 
@@ -42,29 +43,28 @@ export async function routerFixture(deployer: SignerWithAddress): Promise<Router
 
   // deploy router
   const routerFactory = await ethers.getContractFactory('DexRouter');
-  const router = await routerFactory.deploy(factory.address, WKLAY.address);
+  const router = await routerFactory.deploy(factory.address);
 
   // initialize pair
-  await factory.createPair(tokenA.address, tokenB.address);
-  const pairAddress = await factory.getPair(tokenA.address, tokenB.address);
-  const pair = await ethers.getContractAt('DexPair', pairAddress);
+  // await factory.createPair(tokenA.address, tokenB.address, 'Test1LP', 'T1LP');
+  // const pairAddress = await factory.getPair(tokenA.address, tokenB.address);
+  // const pair = await ethers.getContractAt('DexPair', pairAddress);
+  // const pair = null;
 
-  const token0Address = await pair.token0();
-  const token0 = tokenA.address === token0Address ? tokenA : tokenB;
-  const token1 = tokenA.address === token0Address ? tokenB : tokenA;
-
-  await factory.createPair(WKLAY.address, WKLAYPartner.address);
-  const WKLAYPairAddress = await factory.getPair(WKLAY.address, WKLAYPartner.address);
-  const WKLAYPair = await ethers.getContractAt('DexPair', WKLAYPairAddress);
+  // const token0Address = await pair.token0();
+  // await factory.createPair(WKLAY.address, WKLAYPartner.address, 'WKLAYLP', 'WKALYLP');
+  // const WKLAYPairAddress = await factory.getPair(WKLAY.address, WKLAYPartner.address);
+  // const WKLAYPair = await ethers.getContractAt('DexPair', WKLAYPairAddress);
 
   return {
-    token0,
-    token1,
-    WKLAY,
-    WKLAYPartner,
+    tokenA,
+    tokenB,
+    tokenC,
+    // WKLAY,
+    // WKLAYPartner,
     factory,
     router,
-    pair,
-    WKLAYPair,
+    // pair,
+    // WKLAYPair,
   };
 }

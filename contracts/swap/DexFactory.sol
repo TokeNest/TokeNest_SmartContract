@@ -4,6 +4,7 @@ pragma solidity =0.8.12;
 import "../interfaces/IDexFactory.sol";
 import "./DexPair.sol";
 import "./Errors.sol";
+import "../interfaces/IDexPair.sol";
 
 contract DexFactory is IDexFactory {
     /// @notice the recipient of the protocol-wide charge.
@@ -25,6 +26,11 @@ contract DexFactory is IDexFactory {
     /// @notice Init codehash used in Dex Library to calculate pair address without any external calls.
     bytes32 public constant INIT =
         keccak256(abi.encodePacked(type(DexPair).creationCode));
+
+    /**
+     TokeNestUpdate : TokeNest에서 Stable코인으로 취급하는 토큰 List
+     */ 
+    address[] public tokeNestStableCoins;
 
     /**
      * @dev Emitted each time a pair is created via `createPair`.
@@ -62,6 +68,35 @@ contract DexFactory is IDexFactory {
         return allPairs.length;
     }
 
+
+    /**
+     TokeNestUpdate : TokeNest의 Stable용 코인추가 가능 메서드.
+     */
+    function createCriteriaCoin(address criteriaCoin)
+        external 
+    {
+        tokeNestStableCoins.push(criteriaCoin);
+    }
+    
+    function getCriteriaCoins()
+    external
+    view
+    returns(address[] memory coins)
+    {
+        coins = new address[](tokeNestStableCoins.length);
+        for (uint256 i = 0; i < tokeNestStableCoins.length; i++) {
+            coins[i] = tokeNestStableCoins[i];
+        }
+    }
+    function criteriaCoinLength() 
+        external
+        view
+        returns (uint256)
+    {
+        return tokeNestStableCoins.length;
+    }
+    
+    
     /**
      * @notice Creates a pair for tokenA and tokenB if one doesn't exist already.
      * @dev tokenA and tokenB are interchangeable. Emits `PairCreated` event.
@@ -76,11 +111,37 @@ contract DexFactory is IDexFactory {
         external
         returns (address pair)
     {
+        address token0;
+        address token1;
+        bool isStableTokenExist = false;
+
         if (tokenA == tokenB)
             revert InvalidAddressParameters("DEX: IDENTICAL_ADDRESSES");
-        (address token0, address token1) = tokenA < tokenB
-            ? (tokenA, tokenB)
-            : (tokenB, tokenA);
+        
+        /**
+         TokeNestUpdate : 토큰추가 로직 변경
+         myToken = token0, StableCoin = token1
+        */ 
+        
+        for(uint32 i = 0; i < tokeNestStableCoins.length; i++) {
+            if(tokenA == tokeNestStableCoins[i]) {
+                token0 = tokenB;
+                token1 = tokenA;
+                isStableTokenExist = true;
+            } else if(tokenB == tokeNestStableCoins[i]) {
+                token0 = tokenA;
+                token1 = tokenB;
+                isStableTokenExist = true;
+            }
+        }
+        if(!isStableTokenExist) {
+             revert InvalidAddressParameters("Invalid Value : This Tokens is not authorized.");
+        }
+
+        // (address token0, address token1) = tokenA < tokenB
+        //     ? (tokenA, tokenB)
+        //     : (tokenB, tokenA);
+        
         if (token0 == address(0))
             revert InvalidAddressParameters("DEX: ZERO_ADDRESS");
         if (getPair[token0][token1] != address(0))
@@ -116,5 +177,34 @@ contract DexFactory is IDexFactory {
         if (msg.sender != feeToSetter) revert Unauthorized();
         feeToSetter = _feeToSetter;
         emit FeeToSetterChanged(feeToSetter);
+    }
+
+    /**
+     TokeNestUpdate : getTokenValue() call메서드 추가.
+     token0, token1의 가격 조회
+    */ 
+    
+    function getTokenValues(address[] calldata pairs)
+        public 
+        view
+        returns (
+            uint256[] memory token0Values,
+            uint256[] memory token1Values 
+        )
+    {
+        token0Values = new uint256[](pairs.length+1); // Initialize the array with the correct length
+        token1Values = new uint256[](pairs.length); // Initialize the array with the correct length
+
+        for(uint32 i = 0; i < pairs.length; i++) {
+            (uint256 _reserve0, uint256 _reserve1,) = IDexPair(pairs[i]).getReserves();
+            address token0 = IDexPair(pairs[i]).token0();
+            address token1 = IDexPair(pairs[i]).token1();
+            token0Values[i] = _reserve1 * (10 ** getTokenDecimals(token0)) / _reserve0;
+            token1Values[i] = _reserve0 * (10 ** getTokenDecimals(token1)) / _reserve1;
+        }
+    }
+
+    function getTokenDecimals(address token) public view returns(uint24 returnToken){
+        returnToken = IKIP7Metadata(token).decimals();
     }
 }

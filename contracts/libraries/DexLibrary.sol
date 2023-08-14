@@ -2,22 +2,41 @@
 pragma solidity =0.8.12;
 
 import '../interfaces/IDexPair.sol';
+import '../interfaces/IDexFactory.sol';
 
 library DexLibrary {
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'DexLibrary: IDENTICAL_ADDRESSES');
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'DexLibrary: ZERO_ADDRESS');
+    /**
+     TokeNestUpdate : 페어 생성 규칙에 맞춰 sortToken메서드 로직 변경.
+     */ 
+    function sortTokens(address factory, address tokenA, address tokenB) internal view returns (address token0, address token1) {
+        bool isStableTokenExist = false;
+        for(uint i = 0; i < IDexFactory(factory).criteriaCoinLength(); i++) {
+            address _stableToken = IDexFactory(factory).tokeNestStableCoins(i);
+            if(tokenA == _stableToken) {
+                token0 = tokenB;
+                token1 = tokenA;
+                isStableTokenExist = true;
+                break;
+            } else if(tokenB == _stableToken) {
+                token0 = tokenA;
+                token1 = tokenB;
+                isStableTokenExist = true;
+                break;
+            }
+        }
+        // require(tokenA != tokenB, 'DexLibrary: IDENTICAL_ADDRESSES');
+        // (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        // require(token0 != address(0), 'DexLibrary: ZERO_ADDRESS');
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
     /**
     TokeNestUpdate : pairFor의 encodePacked부분에서 오류 발생하나 원인파악 불가함. 이에 TokeNest에서 pairFor는 사용하지 않음.
      */
-    function pairFor(address factory, address tokenA, address tokenB) internal pure returns (address pair) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
+    function pairFor(address factory, address tokenA, address tokenB) internal view returns (address pair) {
+        (address token0, address token1) = sortTokens(factory, tokenA, tokenB);
         pair = address(uint160(uint(keccak256(abi.encodePacked(
                 hex'ff',
                 factory,
@@ -30,7 +49,7 @@ library DexLibrary {
     TokeNestUpdate : pairFor -> IDexPair(pair).getReserves() 변경.
      */
     function getReserves(address pair, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
-        (address token0,) = sortTokens(tokenA, tokenB);
+        (address token0,) = sortTokens(IDexPair(pair).factory(), tokenA, tokenB);
         (uint reserve0, uint reserve1,) = IDexPair(pair).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
