@@ -275,6 +275,7 @@ contract DexRouter is IDexRouter {
     // requires the initial amount to have already been sent to the first pair
     /**
      TokeNestUpdate : DexLibrary.pairFor -> IDexFactory(factory).getPair 변경.
+     TokeNest는 이중 Pair만 사용함으로 _swap메서드 로직 변경.
     */
     function _swap(
         uint256[] memory amounts,
