@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity =0.8.12;
 
-import '../interfaces/IDexKIP7.sol';
+import "../interfaces/IDexKIP7.sol";
 import "@klaytn/contracts/KIP/interfaces/IKIP7Receiver.sol";
-import '@klaytn/contracts/utils/Address.sol';
-import '@klaytn/contracts/KIP/utils/introspection/KIP13.sol';
+import "@klaytn/contracts/utils/Address.sol";
+import "@klaytn/contracts/KIP/utils/introspection/KIP13.sol";
 
 contract DexKIP7 is IDexKIP7, KIP13 {
     using Address for address;
 
     /**
-    TokeNestUpdate : name과 symbol의 기본 값 변경. name = 'TOKENEST', symbol = 'TokeNestLP'
+    TokeNestUpdate : name과 symbol의 기본 값 변경. name = "TOKENEST", symbol = "TokeNestLP"
     name과 symbol은 생성자를 통해 생성될 때 지정 가능.
     */
-    string public name = 'TOKENEST';
-    string public symbol = 'TKNLP';
+    string public name = "TOKENEST";
+    string public symbol = "TKNLP";
     uint8 public constant decimals = 18;
 
     uint  public totalSupply;
@@ -40,9 +40,9 @@ contract DexKIP7 is IDexKIP7, KIP13 {
         }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
-                keccak256(bytes('1')),
+                keccak256(bytes("1")),
                 chainId,
                 address(this)
             )
@@ -175,14 +175,14 @@ contract DexKIP7 is IDexKIP7, KIP13 {
     }
 
     /**
-    * @dev  Moves `amount` tokens from the caller's account to `recipient`.
+    * @dev  Moves `amount` tokens from the caller"s account to `recipient`.
     */
     function safeTransfer(address recipient, uint256 amount) external {
         safeTransfer(recipient, amount, "");
     }
 
     /**
-    * @dev Moves `amount` tokens from the caller's account to `recipient`.
+    * @dev Moves `amount` tokens from the caller"s account to `recipient`.
     */
     function safeTransfer(address recipient, uint256 amount, bytes memory data) public {
         _transfer(msg.sender, recipient, amount);
@@ -191,7 +191,7 @@ contract DexKIP7 is IDexKIP7, KIP13 {
 
     /**
     * @dev Moves `amount` tokens from `sender` to `recipient` using the allowance mechanism.
-    * `amount` is then deducted from the caller's allowance.
+    * `amount` is then deducted from the caller"s allowance.
     */
     function safeTransferFrom(address sender, address recipient, uint256 amount) external {
         safeTransferFrom(sender, recipient, amount, "");
@@ -199,7 +199,7 @@ contract DexKIP7 is IDexKIP7, KIP13 {
 
     /**
     * @dev Moves `amount` tokens from `sender` to `recipient` using the allowance mechanism.
-    * `amount` is then deducted from the caller's allowance.
+    * `amount` is then deducted from the caller"s allowance.
     */
     function safeTransferFrom(address sender, address recipient, uint256 amount, bytes memory data) public {
         uint currentAllowance = allowance[sender][msg.sender];
@@ -215,8 +215,8 @@ contract DexKIP7 is IDexKIP7, KIP13 {
 
     /**
      * @dev See {IKIP7Permit-permit}.
-     * Sets `value` as the allowance of `spender` over ``owner``'s tokens,
-     * given ``owner``'s signed approval.
+     * Sets `value` as the allowance of `spender` over ``owner``"s tokens,
+     * given ``owner``"s signed approval.
      *
      * IMPORTANT: The same issues {IKIP7-approve} has related to transaction
      * ordering also apply here.
@@ -229,23 +229,23 @@ contract DexKIP7 is IDexKIP7, KIP13 {
      * - `deadline` must be a timestamp in the future.
      * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
      * over the EIP712-formatted function arguments.
-     * - the signature must use ``owner``'s current nonce (see {nonces}).
+     * - the signature must use ``owner``"s current nonce (see {nonces}).
      *
      * For more information on the signature format, see the
      * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
      * section].
      */
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'DEX: EXPIRED');
+        require(deadline >= block.timestamp, "DEX: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
-                '\x19\x01',
+                "\x19\x01",
                 DOMAIN_SEPARATOR,
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'DEX: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "DEX: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 

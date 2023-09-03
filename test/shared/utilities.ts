@@ -7,10 +7,10 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 export function getCreate2Address(
   factoryAddress: string,
-  [tokenA, tokenB]: [string, string],
+  [token0, token1]: [string, string],
   bytecode: string,
 ): string {
-  const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
+  // const [token0, token1] = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
   const create2Inputs = [
     '0xff',
     factoryAddress,

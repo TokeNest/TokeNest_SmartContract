@@ -95,7 +95,6 @@ describe('DexPair', () => {
         .withArgs('DEX: K');
       // 이건 예상치와 맞아서 잘 됨.
       await pair.swap(0, expectedOutputAmount, wallet.address, '0x');
-      console.log(await token0.balanceOf(wallet.address));
       // log 찍어보면 예상한 값만큼 token2로 들어왔음. 즉 토큰1과 토큰2를 스왑한 것.
       console.log(await token1.balanceOf(wallet.address));
     });

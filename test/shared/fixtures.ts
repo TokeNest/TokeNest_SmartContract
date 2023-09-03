@@ -13,15 +13,16 @@ export async function pairFixture(
 ): Promise<PairFixture> {
   const { factory } = await factoryFixture(deployer);
   const tokenFactory = await ethers.getContractFactory('KIP7Mock');
-  const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
-  const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
-  await factory.createPair(tokenA.address, tokenB.address, 'Test', 'TT'); // overrides
-  const pairAddress = await factory.getPair(tokenA.address, tokenB.address);
+  const token0 = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  const token1 = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
+  await factory.createCriteriaCoin(token1.address);
+  await factory.createPair(token0.address, token1.address, 'Test', 'TT'); // overrides
+  const pairAddress = await factory.getPair(token0.address, token1.address);
   const pair = await ethers.getContractAt('DexPair', pairAddress);
 
-  const token0Address = (await pair.token0());
-  const token0 = tokenA.address === token0Address ? tokenA : tokenB;
-  const token1 = tokenA.address === token0Address ? tokenB : tokenA;
+  // const token0Address = (await pair.token0());
+  // const token0 = tokenA.address === token0Address ? tokenA : tokenB;
+  // const token1 = tokenA.address === token0Address ? tokenB : tokenA;
 
   return {
     factory, token0, token1, pair,
@@ -31,12 +32,9 @@ export async function pairFixture(
 export async function routerFixture(deployer: SignerWithAddress): Promise<RouterFixture> {
   // deploy tokens
   const tokenFactory = await ethers.getContractFactory('KIP7Mock');
-  const WKLAY9Factory = await ethers.getContractFactory('WKLAY');
   const tokenA = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
   const tokenB = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
   const tokenC = await tokenFactory.deploy(ethers.utils.parseEther('500000000000000'));
-  const WKLAY = await WKLAY9Factory.deploy();
-  const WKLAYPartner = await tokenFactory.deploy(ethers.utils.parseEther('10000'));
 
   // deploy factory
   const { factory } = await factoryFixture(deployer);

@@ -519,7 +519,7 @@ contract DexRouter is IDexRouter {
         override
         returns (uint256[] memory amounts)
     {
-        return DexLibrary.getAmountsOut(factory, amountIn, path);
+        return DexLibrary.getAmountsOut(IDexFactory(factory).getPair(path[0], path[1]), amountIn, path);
     }
 
     /**
@@ -535,7 +535,7 @@ contract DexRouter is IDexRouter {
         override
         returns (uint256[] memory amounts)
     {
-        return DexLibrary.getAmountsIn(factory, amountOut, path);
+        return DexLibrary.getAmountsIn(IDexFactory(factory).getPair(path[0], path[1]), amountOut, path);
     }
 
 

@@ -24,15 +24,15 @@ describe('DexKIP7', () => {
     // DexKIP7Test 팩토리 가져와서 스마트 컨트랙트 인스턴스 배포 및 생성 가능.
     tokenFactory = await ethers.getContractFactory('DexKIP7Test');
     // 10000이더 배포.
-    token = await tokenFactory.deploy(TOTAL_SUPPLY);
+    token = await tokenFactory.deploy(TOTAL_SUPPLY, 'TestLP', 'TLP');
   });
 
-  // 토큰 정보 알려주는듯. name, symbol, decimals같은건 DexKIP7.sol에서 지정함. 이해안가는건 totalSupply..
+  // 토큰 정보 알려주는듯. name, symbol, decimals같은건 DexKIP7.sol에서 지정함.
   it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
     const name = await token.name();
     const separator = getDomainSeparator(name, '1', 31337, token.address);
-    expect(name).to.eq('DEXswap');
-    expect(await token.symbol()).to.eq('KlayLP');
+    expect(name).to.eq('TestLP');
+    expect(await token.symbol()).to.eq('TLP');
     expect(await token.decimals()).to.eq(18);
     expect(await token.totalSupply()).to.eq(TOTAL_SUPPLY);
     expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY);
