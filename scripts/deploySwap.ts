@@ -10,13 +10,6 @@ async function main() {
   const deployer = accounts[0].address;
   console.log('Sender address: ', deployer);
 
-  // Deploy WKLAY
-  const wklay = await ethers.getContractFactory('WKLAY');
-  const wklayInstance = await wklay.deploy();
-  await wklayInstance.deployed();
-
-  console.log(`WKLAY deployed to : ${wklayInstance.address}`);
-
   // Deploy Factory
   const factory = await ethers.getContractFactory('DexFactory');
   const factoryInstance = await factory.deploy(deployer);
@@ -24,11 +17,10 @@ async function main() {
 
   console.log(`Dex Factory deployed to : ${factoryInstance.address}`);
 
-  // Deploy Dex Router passing Factory Address and WKLAY Address
+  // Deploy Dex Router passing Factory Address
   const router = await ethers.getContractFactory('DexRouter');
   const routerInstance = await router.deploy(
     factoryInstance.address,
-    wklayInstance.address,
   );
   await routerInstance.deployed();
 
