@@ -307,4 +307,4 @@ TokeNest에게 기여하기 전  [Contributor License Agreement(CLA)](https://gi
 
 - [Contribution Guide](./CONTRIBUTING.md)
 - [License](./LICENSE)
-- [Code of Conducts](./code-of-conduct.md)
+- [Code of Conducts](./CODE_OF_CONDUCT.md)
