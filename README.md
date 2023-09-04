@@ -141,7 +141,7 @@ hardhat test로 포크된 네트워크에서 배포하는 과정을 시뮬레이
 
 ## Documentation
 
-이 리포지토리는 TokeNest-DEX의 세부 실행 매커니즘을 `원두` 상품을 예시로 설명하는 문서를 제공하고 있습니다. ([문서 참조](./docs/README.md))
+이 리포지토리는 TokeNest-DEX의 세부 실행 매커니즘을 `원두` 상품을 예시로 설명하는 문서를 제공하고 있습니다. ([TokeNest-Dex-Process](./docs/dex-process.md))
 
 오픈 SW개발자 대회의 취지에 따라, 모든 토크네스트 코드베이스와 문서는 전부 오픈 소스로 제공됩니다. 누구나 자유롭게 TokeNest의 코드를 보고, 편집하고, 수정할 수 있습니다.
 
