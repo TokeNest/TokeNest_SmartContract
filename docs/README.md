@@ -11,7 +11,7 @@
 
 또한, 각 스마트 컨트랙트들에 사용된 함수들과 계산 로직에 대해서도 설명하고 있습니다.
 
-## Workflow
+## Work Process
 
-[TokeNest-DEX Workflow](./dex-workflow.md) 문서는 TokeNest Dex가 만들어진 과정과 TokeNest의 예시 상품(`원두`)이 컨트랙트들을 통해 상품의 가격이 변하는 과정 등 세부 동작에 대해 설명합니다.
+[TokeNest-DEX-Process](./dex-process.md) 문서는 TokeNest Dex가 만들어진 과정과 TokeNest의 예시 상품(`원두`)이 컨트랙트들을 통해 상품의 가격이 변하는 과정 등 세부 동작에 대해 설명합니다.
 
