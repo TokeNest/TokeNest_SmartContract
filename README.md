@@ -143,12 +143,7 @@ hardhat test로 포크된 네트워크에서 배포하는 과정을 시뮬레이
 
 이 리포지토리는 TokeNest-DEX의 세부 실행 매커니즘을 `원두` 상품을 예시로 설명하는 문서를 제공하고 있습니다. ([문서 참조](./docs/README.md))
 
-## Want to Contribute to TokeNest DEX Contracts? <a id="want-to-contribute"></a>
+오픈 SW개발자 대회의 취지에 따라, 모든 토크네스트 코드베이스와 문서는 전부 오픈 소스로 제공됩니다. 누구나 자유롭게 TokeNest의 코드를 보고, 편집하고, 수정할 수 있습니다.
 
-오픈 SW개발자 대회의 취지에 따라, 모든 토크네스트 코드베이스와 문서는 전부 오픈 소스입니다. 토크네스트는 항상 당신의 Contribute를 환영하며, 누구나 우리의 코드를 보고, 편집하고, 수정해 제안할 수 있습니다. 또한, 깃허브에서 pull request를 만들고 더 나은 프로젝트를 만드는 것에 동참할 수 있습니다. 
-
-TokeNest에게 기여하기 전  [Contributor License Agreement(CLA)](https://gist.github.com/e78f99e1c527225637e269cff1bc7e49) 를 확인하세요. 또한, 기여하기 전에 확인할 수 있는 몇 가지 지침이 있습니다:
-
-- [Contribution Guide](./CONTRIBUTING.md)
 - [License](./LICENSE)
 - [Code of Conducts](https://github.com/TokeNest/TokeNest_SmartContract/blob/master/CODE_OF_CONDUCT.md)
