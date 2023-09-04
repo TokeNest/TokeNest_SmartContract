@@ -7,11 +7,14 @@ linkcolor: #e3232c
 
 -->
 
-# Klaytn-DEX Specification<!-- omit in toc -->
+# TokeNest-DEX Specification<!-- omit in toc -->
 
 <!-- start intro: only for github, remove if creating a pdf -->
+#### 본 문서는 Klaytn-dex-contracts의 문서를 기반으로 작성되었으며, TokeNest의 스펙에 맞춰 재 정리된 문서입니다.
 
-This document provides detailed specification for the Dex smart contracts, discusses security concerns, and offers the general information about the project needed to better understand its nature.
+이 문서에서는 TokeNest DEX의 스마트 컨트랙트들의 핵심 기능들에 대해 자세한 설명을 제공하며, 보안 문제에 대해 논의하고 프로젝트에 대한 일반적인 정보를 제공합니다.
+
+Farming과 Staking 컨트랙트는 TokeNest의 핵심 기능에 포함되는 기능이 아니기 때문에 추후 DEX 고도화 개발 시 컨트랙트 개발할 예정입니다.
 
 ## Contents<!-- omit in toc -->
 
@@ -19,7 +22,6 @@ This document provides detailed specification for the Dex smart contracts, discu
   - [Dex](#dex)
   - [DEX platform](#dex-platform)
   - [Constant Product Formula](#constant-product-formula)
-    - [Invariant](#invariant)
   - [Token Types](#token-types)
     - [ERC20](#erc20)
     - [KIP7](#kip7)
@@ -54,31 +56,6 @@ This document provides detailed specification for the Dex smart contracts, discu
       - [Library Contract: Functions](#library-contract-functions)
         - [`getAmountOut`](#getamountout)
         - [`getAmountIn`](#getamountin)
-  - [Farming and Staking](#farming-and-staking)
-    - [`Farming`](#farming)
-      - [Allocation Points](#allocation-points)
-      - [Farming: PoolInfo](#farming-poolinfo)
-      - [Farming: UserInfo](#farming-userinfo)
-      - [Farming: Events](#farming-events)
-      - [Farming: Reward Debt and Pending Reward](#farming-reward-debt-and-pending-reward)
-      - [Farming: Functions](#farming-functions)
-        - [Farming: `updatePool`](#farming-updatepool)
-        - [Farming: `getMultiplier`](#farming-getmultiplier)
-    - [`StakingFactory`](#stakingfactory)
-      - [`deployPool`](#deploypool)
-    - [`StakingInitializable`](#stakinginitializable)
-      - [Staking: PoolInfo](#staking-poolinfo)
-        - [User Limit](#user-limit)
-      - [Staking: UserInfo](#staking-userinfo)
-      - [Staking: Events](#staking-events)
-      - [Staking: Reward Debt and Pending Reward](#staking-reward-debt-and-pending-reward)
-      - [Staking: Functions](#staking-functions)
-        - [Staking: `_getMultiplier`](#staking-_getmultiplier)
-        - [Staking: `_updatePool`](#staking-_updatepool)
-        - [Staking: `updateStartAndEndBlocks`](#staking-updatestartandendblocks)
-        - [Staking: `updateRewardPerBlock`](#staking-updaterewardperblock)
-        - [Staking: `hasUserLimit`](#staking-hasuserlimit)
-        - [Staking: `updatePoolLimitPerUser`](#staking-updatepoollimitperuser)
   - [Access](#access)
     - [`Ownable`](#ownable)
       - [`Ownable`: Functions](#ownable-functions)
@@ -87,131 +64,125 @@ This document provides detailed specification for the Dex smart contracts, discu
         - [Admin role](#admin-role)
 - [Security Concerns](#security-concerns)
 - [Calculations](#calculations)
-- [Diagrams](#diagrams)
-  - [Type 1 Smart Contract](#type-1-smart-contract)
-  - [Type 2 Smart Contract](#type-2-smart-contract)
 
 <!-- end intro: only for github, remove if creating a pdf -->
 
 ## Introduction
 
-Below we offer a brief overview of the project design and define the terms used throughout the document.
+아래 정보는 프로젝트 설계에 대한 간략한 개요를 제공하고 문서 전체에서 사용되는 용어를 정의합니다.
 
 ### Dex
 
-Dex is an automated liquidity protocol powered by a [constant product formula](#constant-product-formula) and implemented in a system of smart contracts. Dex is designed as a highly customizable system, and so it **does not have the tokenomics defined**. Each instance of Dex will define its own tokenomics.
+Dex는 자동화된 유동성 프로토콜입니다. [Dex는 정의된 공식](#constant-product-formula)으로 구동 되는 스마트 컨트랙트 시스템입니다. Dex는 사용자 정의가 가능한 시스템으로 설계되어 있기 때문에 **tokenomics가 정의되어 있지 않습니다.** Dex의 각 인스턴스는 자체의 tokenomics를 정의합니다.
 
 ### DEX platform
 
-DEX platform combines [Dex protocol](#dex), which is a system of non-upgradeable smart contracts implemented for the Klaytn blockchain, with other smart contracts, e.g. farming and staking.
+DEX 플랫폼은 클레이튼 블록체인을 위해 구현된 업그레이드가 불가능한 스마트 계약 시스템인 [DEX 프로토콜](#dex)을 다른 스마트 컨트랙트와 결합합니다.
 
 ### Constant Product Formula
 
-The automated market making algorithm used by [Dex](#dex): `x * y = k`. The formula states that the trades must not change the product (`k`) of a pair's reserve balances (`x` and `y`).
-
-#### Invariant
-
-The `k` value in the [constant product formula](#constant-product-formula) is called **invariant**.
+Dex에서 사용되는 자동 시장 결정 알고리즘은 [Dex](#dex): `x * y = k` 공식으로 유동되는 풀의 각 쌍(`x`, `y`)의 곱(`k`)을 변경해서는 안 된다는 것을 나타냅니다.
 
 ### Token Types
 
-[Dex protocol](#dex) works with ERC20 and KIP7 token standards that implement APIs for fungible tokens within smart contracts.
+[Dex 프로토콜](#dex)은 스마트 계약 내에서 대체 가능한 토큰에 대한 API를 구현하는 ERC20 및 KIP7 토큰 표준과 함께 작동합니다.
 
-Note that deflationary tokens and tokens with commission on transfer are not supported on DEX.
+DEX에서는 디플레이션 토큰 및 전송 수수료가 있는 토큰이 지원되지 않습니다.
 
 #### ERC20
 
-[ERC20](https://eips.ethereum.org/EIPS/eip-20) (Ethereum Request for Comments 20) is a token standard that was proposed by Fabian Vogelsteller. Dex supports all standard ERC20 implementations.
+[ERC20](https://eips.ethereum.org/EIPS/eip-20) (Ethereum Request for Comments 20)은 Fabian Vogelsteller가 제안한 토큰 표준으로, Dex는 모든 표준 ERC20 구현을 지원합니다.
 
 #### KIP7
 
-[KIP7](https://kips.klaytn.foundation/KIPs/kip-7) is a fungible token standard for Klaytn. Dex supports all standard KIP7 implementations.
+[KIP7](https://kips.klaytn.foundation/KIPs/kips-7)은 Klaytn의 대체 가능한 토큰 표준입니다. DEX는 모든 표준 KIP7 구현을 지원합니다.
 
 ### Factory
 
-Factory is a smart contract that deploys a unique smart contract for any ERC20/ERC20, KIP7/KIP7, ERC20/KIP7, or KIP7/ERC20 [token pair](#pair). See [`DexFactory` contract](#dexfactory) for details.
+Factory는 ERC20/ERC20, KIP7/KIP7, ERC20/KIP7 또는 KIP7/ERC20 [Token pair](#pair)에 대한 고유의 스마트 컨트랙트를 배포하는 컨트랙트 입니다. 자세한 내용은 [`DexFactory` 컨트랙트](#dexfactory)를 참조하세요.
 
 ### Pair
 
-Pair is a smart contract deployed from the Dex Factory that enables trading between any combination of two ERC20 or KIP7 tokens. See [`DexPair` contract](#dexpair) for details.
+Pair는 Dex Factory에서 배포한 스마트 컨트랙트로 두 개의 ERC20 또는 KIP7 토큰의 조합 간에 거래가 가능합니다. 자세한 내용은 [`DexPair` Contract](#dexpair)를 참조하세요.
 
 ### Token Swap
 
-Token swaps in Dex are a simple way to trade one ERC-20 or KIP7 token for another. Each pair of tokens on Dex is underpinned by a [liquidity pool](#liquidity-pool).
+Dex의 토큰 스왑은 하나의 ERC-20 또는 KIP7 토큰을 다른 토큰과 교환하는 방법입니다. Dex의 각 토큰들은 [유동성 풀](#liquidity-pool)를 뒷받침해 동작합니다.
 
-The [`DexPair`](#dexpair) contract defines the low-level swap function, while the [`DexRouter`](#dexrouter) contract performs the swap operation.
+['DexPair'](#dexpair) 컨트랙트는 낮은 수준의 스왑 기능을 정의하며, [`DexRouter`](#dexRouter) 계약을 통해 스왑을 진행합니다.
 
 #### `DEXswap`
 
-While DEX contracts ([`DexPair`](#dexpair), [`DexRouter`](#dexrouter), [`Farming`](#farming), [`StakingFactoryPool`](#stakinginitializable), [`StakingFactoty`](#stakingfactory)) do not use `safeTransfer` or `safeTransferFrom` functions from the `DEXswap` token, the `DEXswap` token (its `safeTransfer` and `safeTransferFrom` functions) can be used separately by any user to send tokens to other contracts.
+DEX 컨트랙트([`DexPair`](#dexpair), [`DexRouter`](#dexrouter))는 DEXswap 토큰에서 `safeTransfer` 또는 `safeTransferFrom` 기능을 사용하지 않지만, DexSwap 토큰(`SafeTransfer` 및 `SafeTransferFrom` 기능)은 사용자가 다른 계약으로 토큰을 보낼 때 별도로 사용할 수 있습니다.
 
-**Warning**: This can lead to re-entrancy attacks from contracts which are not handled by DEX.
+**Warning**: 이로 인해 DEX에서 처리하지 않는 컨트랙트에서 re-entrancy 공격이 발생할 수 있습니다.
 
-The `safeTransfer` and `safeTransferFrom` invoke external call `onKIP7Received` on the recipient address in the `_checkOnKIP7Received` function to verify if the recipient address is a `KIP7Receiver`. This `onKIP7Received(recipient)` call is a weak place. Since it is an external call to an unknown contract, where the recipient contract may define any arbitrary logic to be executed, it is possible to re-enter functions through the use of `safeTransfer` and `safeTransferFrom`.
+`safeTransfer`와 `safeTransferFrom`은 `_checkOnKIP7Received` 함수의 수신자 주소에 extenal call 함수인 `onKIP7Received`를 호출하여 수신자 주소가 `KIP7Receiver`인지 확인합니다. 이 `onKIP7Received(recipient)` 호출은 약한 곳입니다. 수신자 컨트랙트가 임의의 실행 논리를 정의할 수 있는 미지의 컨트랙트에 대한 외부 호출이므로 `safeTransfer`와 `safeTransferFrom`을 사용하여 함수를 다시 입력할 수 있습니다.
 
-Users should check the recipient address thoroughly if they want to use these functions. They should check that it doesn't look suspicious to them and doesn't have any malicious code (unverified contracts).
+사용자가 이 기능을 사용하려면 수신자 주소를 철저히 확인해야 하며, 본인이 보기에 의심스러워 보이지 않고 악성코드(미확인 컨트랙트)가 없는지 확인해야 합니다.
 
-**Warning**: There is also a risk of double-spend allowance when `approve` and `transferFrom` are used. The avoid an attack when changing the allowance value, first set allowance to zero, then verify if it was used before setting the new value.
+**Warning**: `approve`와 `transfer From`을 사용할 경우 이중지출이 발생할 우려도 있습니다. 공격을 피하기 위해 허용치 변경 시 먼저 허용치를 0으로 설정한 후 사용 여부를 확인한 다음 새 값을 설정합니다.
 
 ### Liquidity Pool
-
-Liquidity pools are smart contracts that hold balances of two unique tokens and enforce rules on depositing and withdrawing them. See [Farming and Staking](#farming-and-staking) for more details.
+유동성 풀은 두 개의 고유 토큰의 잔액을 보유하고 입출금에 대한 규칙을 시행하는 스마트 계약입니다.
 
 ### Liquidity Provider
 
-A liquidity provider is someone who deposits an equivalent value of two ERC20 or KIP7 tokens into a [liquidity pool](#liquidity-pool) for the token pair, and receives [pool tokens](#pool-tokens) in return. Liquidity providers take on a price risk and are compensated with fees.
+유동성 제공자는 토큰 쌍을 위해 2개의 ERC20 또는 KIP7 토큰에 해당하는 값을 [pool tokens](#pool-tokens)에 예치하고 그 대가로 [liquidity pool](#liquidity-pool)을 받습니다. 유동성 제공자는 가격 위험을 감수하고 수수료로 보상을 받습니다.
 
 ### Liquidity Provider Fee
 
-Liquidity Provider Fees for swapping tokens is 0.3%, which is split by liquidity providers proportional to their contribution to liquidity reserves.
+유동성 공급자 토큰 교환 수수료는 유동성 보유액에 대한 기여도에 비례하여 유동성 공급자가 분할하는 0.3%입니다.
 
 ### Pool Tokens
 
-When liquidity is deposited into a pool, unique tokens known as liquidity tokens (LP tokens) are minted and sent to the provider's address. These tokens represent a given liquidity provider's contribution to a pool.
+유동성이 풀에 입금되면 유동성 토큰(LP 토큰)으로 알려진 고유 토큰이 발행되어 제공자의 주소로 전송됩니다. 이러한 토큰은 주어진 유동성 제공자의 풀에 대한 기여를 나타냅니다.
 
-The number of liquidity tokens the provider receives is determined by the proportion of the pool liquidity that was provided. Refer to the description of the [`mint`](#mint) function for the details.
+제공자가 받는 유동성 토큰의 수는 제공된 풀 유동성의 비율에 따라 결정되며, 자세한 내용은 [`mint`](#mint) 함수 설명을 참조하십시오.
 
 ### Multisignature wallet
 
-Multisignature wallet is a contract that allows multiple parties to agree on proposals for various actions in Dex. The contract allows to submit and confirm proposals. There is also an option to revoke your confirmation (if previously confirmed) from a proposal.
+다중 서명 지갑은 DEX의 다양한 행동에 대한 제안에 여러 당사자가 동의할 수 있는 컨트랙트 입니다. 컨트랙트를 통해 제안을 제출하고 확인할 수 있으며, 제안에서 확인(이전에 확인된 경우)을 취소할 수 있는 옵션도 있습니다.
 
-After a certain number of signers confirmed an operation, it can be executed. After the specified condition is met, i.e. the number of signers that confirmed an operation is greater than `min_required`, the proposal is executed automatically during `confirmTransaction` function call. In case of a fail, the proposal could also be executed manually.
+일정한 수의 서명자가 동작을 확인하며 실행할 수 있으며, 지정된 조건, 즉 동작을 확인한 서명자의 수가 `min_required`보다 큰 경우 `confirmTransaction` 함수 호출 중에 자동으로 제안이 실행되며, 실패 시에는 수동으로 제안을 실행할 수도 있습니다.
 
 ## Smart Contracts
 
-Dex uses Uniswap V2 smart contract system, which is a binary system consisting of the core and periphery contracts. [Core contracts](#core) provide fundamental safety guarantees for all parties interacting with Dex. [Periphery contracts](#periphery) interact with one or more core contracts but are not themselves part of the core.
+Dex는 핵심 컨트랙트와 주변 컨트랙트로 구성된 이진 시스템인 Uniswap V2 스마트 컨트랙트 시스템을 사용합니다. [Core contracts](#core)는 Dex와 상호 작용하는 모든 당사자에게 근본적인 안전을 보장합니다. [Periphery contracts](#periphery)는 하나 이상의 핵심 계약과 상호 작용하지만 그 자체는 핵심의 일부가 아닙니다.
 
 ![Dex module](img/dex-module.png)<!-- pdf option: { width=400px } -->
 
-Refer to [factory](#dexfactory), [pair](#dexpair), [router](#dexrouter), [library](#dexlibrary) contracts for their descriptions.
+설명은 [factory](#dexfactory), [pair](#dexpair), [router](#dexrouter), [library](#dexlibrary) 계약을 참조하십시오.
 
 ### Deployment Order
 
-Smart contracts are deployed in the following order:
+스마트 컨트랙트들을 배포하려면 아래 순서대로 실행하세요.
 
-1. WKLAY (needed for testnet)
-2. [Dex Factory](#dexfactory)
-3. [Dex Router](#dexrouter)
-4. [Multisig](#multisignature-wallet)
-5. Dex Token
-6. [Farming](#farming)
-7. [Staking Factory](#stakinginitializable)
+1. [Dex Factory](#dexfactory)
+2. [Dex Router](#dexrouter)
+3. [Multisig](#multisignature-wallet)
+4. Dex Token
+5. Swap
+6. [Check for price fluctuations in TokeNest-NextJs Project](https://github.com/TokeNest/TokeNest_NextJs)
+
+WKLAY의 경우 [Tokenest-dex-specification](#tokenest-dex-specification)에서 소개한 것과 같이 TokeNest의 핵심 기능에 부합하지 않는 기능으로 고도화 개발 시 구현할 예정입니다. 현재 Test코드에서 기존 WKLAY의 부분은 제외했으며, 필요 시 [Klaytn-dex-contract](https://github.com/klaytn/klaytn-dex-contracts)를 참조하시기 바랍니다.
+
 
 ### Core
 
-The core consists of a single factory and many pairs that the factory is responsible for creating and indexing. Core contracts are smart contracts that are essential for Uniswap to exist. Upgrading to a new version of core would require a liquidity migration.
+코어는 단일 facotry와 factory가 생성 및 인덱싱을 담당하는 많은 pair들로 구성됩니다. 코어 컨트랙트는 유니스왑이 존재하기 위해 필수적인 스마트 계약입니다. 새로운 버전의 코어로 업그레이드하려면 유동성 마이그레이션이 필요합니다.
 
-The **factory** (`DexFactory`) holds the generic bytecode responsible for powering pairs. Its primary job is to create one and only one smart contract per unique token pair. It also defines the logic to turn on the protocol charge.
+**factory**(`DexFactory`)는 pair의 전원을 공급하는 일반 바이트 코드를 보유하고 있습니다. 주요 업무는 고유 토큰 pair당 하나의 스마트 컨트랙트를 만드는 것입니다.
 
-The **pairs** (`DexPair`) contracts have two primary purposes: serving as automated market makers and keeping track of pool token balances. They also expose data that can be used to build decentralized price oracles.
+**pairs**(`DexPair`) 컨트랙트는 자동화된 시장 결정자 역할과 풀 토큰 잔액을 추적하는 두 가지 주요 목적을 가지고 있습니다. 또한 분산된 가격 오라클을 구축하는 데 사용할 수 있는 데이터를 노출합니다.
 
 #### `DexFactory`
 
-Factory (`DexFactory`) is a smart contract that deploys a unique smart contract ([`DexPair`](#dexpair)) for any ERC20/ERC20, KIP7/KIP7, ERC20/KIP7, or KIP7/ERC20 token pair if such a pair does not already have a smart contract deployed.
+Factory('DexFactory')는 ERC20/ERC20, KIP7/KIP7, ERC20/KIP7 또는 KIP7/ERC20 토큰 쌍에 대한 고유한 스마트 계약('DexPair')을 배포하는 스마트 계약입니다.
 
-The information about the order in which the pairs were deployed is accessible through `allPairs`, which is an array containing addresses of all created pairs.
+pair가 배포된 순서에 대한 정보는 생성된 모든 pair의 주소를 포함하는 배열인 `allPairs`를 통해 액세스할 수 있습니다.
 
-The contract also manages protocol-wide charge recipient. The `feeTo` defines the address of the protocol-wide charge and `feeToSetter` defines the address that is allowed to change `feeTo`.
+Factory 컨트랙트는 또한 프로토콜 전체 요금 수령자를 관리하며, `feeTo`는 프로토콜 전체 요금의 주소를 정의하고, `feeToSetter`는 `feeTo`를 변경할 수 있는 주소를 정의합니다.
 
 ##### Factory Contract: Functions
 
@@ -219,66 +190,43 @@ The contract also manages protocol-wide charge recipient. The `feeTo` defines th
 
 |          Function           |                                                                                                                                                           Description                                                                                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`createPair`](#createpair) | Create a pair for two given tokens if such a pair doesn't already exist.                                                                                                                                                                                                                                                        |
-| `getPair`                   | Return the address of the pair for two given tokens if such a pair exist.                                                                                                                                                                                                                                                       |
-| `setFeeToSetter`            | Set the address which is allowed to control protocol-wide charge recipients (`feeTo` addresses). Note that a mistake in the address results in the loss of control over the fee destination as the `feeToSetter` address controls protocol-wide charge recipients.                                                              |
-| `setFeeTo`                  | Allow a provided address to control protocol-wide charge recipients. `setFeeTo` сan only be called by the `feeToSetter`, which sets a new address of the protocol-wide charge recipient. Setting the wrong address in the `setFeeTo` function leads to the protocol-wide charge being lost (transferred to that wrong address). |
-| `allPairsLength`            | Return the number of created pairs.                                                                                                                                                                                                                                                                                             |
-
-
-<!-- pdf table
-
-Function                    Description
---------------------------- -------------------------------------------------------------------------
-[`createPair`](#createpair) Create a pair for two given tokens if such a pair doesn't already exist.  
-
-`getPair`                   Return the address of the pair for two given tokens if such a pair exist.
-
-`setFeeToSetter`            Set the address which is allowed to control protocol-wide charge
-                            recipients (`feeTo` addresses). Note that a mistake in the address
-                            results in the loss of control over the fee destination as the
-                            `feeToSetter` address controls protocol-wide charge recipients.
-
-`setFeeTo`                  Allow a provided address to control protocol-wide charge recipients.
-                            `setFeeTo` сan only be called by the `feeToSetter`, which sets a new
-                            address of the protocol-wide charge recipient.
-                            Setting the wrong address in the `setFeeTo` function leads to the
-                            protocol-wide charge being lost (transferred to that wrong address).
-
-`allPairsLength`            Return the number of created pairs.                                      
-
---------------------------- -------------------------------------------------------------------------
-
--->
+| [`createPair`](#createpair) | TokeNest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다.                                                                                                                                                                                                                                                                                             |
+| `getPair`                   | Pair를 구성하는 두 토큰을 입력받아 Pair가 존재할 시 주소를 반환합니다.                                                                                                                                                                                                                                                                                             |
+| `setFeeToSetter`            | 프로토콜 전체 요금 수취인(`feeTo` 주소)을 제어할 수 있는 주소를 설정합니다. 주소를 실수로 입력하면 프로토콜 전체 요금 수취인을 제어하기 때문에 요금 목적지에 대한 제어권을 잃게 됩니다.                                                                                                                                                                                                                                                                                             |
+| `setFeeTo`                  | 제공된 주소를 허용하여 프로토콜 전체 요금 수신자를 제어합니다. `setFeTo`는 프로토콜 전체 요금 수신자의 새 주소를 설정하는 `feeToSetter`에서만 호출할 수 있습니다. `setFeeTo` 기능에서 잘못된 주소를 설정하면 프로토콜 전체 요금이 손실됩니다.                                                                                                                                                                                                                                                                                             |
+| `allPairsLength`            | 생성된 Pair의 총 개수를 반환합니다.                                                                                                                                                                                                                                                                                             |
+| `getCriteriaCoins`                   | TokeNest의 기준 코인을 가져옵니다.                                                                                                                                                                                                                                                        |
+| `createCriteriaCoins`                   | TokeNest에서 사용할 기준 Stable코인을 지정합니다.                                                                                                                                                                                                                                                        |
+| `getTokenValues`                   | pair배열을 파라미터로 받아 각 페어의 두 토큰간의 비율에 따른 가격을 계산해 반환합니다.                                                                                                                                                                                                                                                        |
 
 ###### `createPair`
 
-Given the addresses of two tokens, create a pair for these tokens if such a pair doesn't already exist and return the address of the pair. The function emits the `PairCreated` event. The pair can only be created if the provided tokens are different.
+TokeNest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다. 사용자가 입력한 상품 토큰이 첫 번째 토큰으로 저장되고, CriteriaCoin이 두 번째 토큰으로 저장됩니다.
 
-The `PairCreated` event contains the addresses of both tokens, the address of the pair, and the cardinal number of the created pair. The first token in the emitted event is guaranteed to be strictly less than the second token by sort order.
+또한 함수가 실행되면 `PairCreated` event를 발생시키며 Pair생성 시 동일한 토큰 쌍으로 시도 시 생성되지 않습니다.
+`pairCreated` 이벤트는 생성된 두 토큰의 주소, Pair의 주소, Pair의 기본 번호를 모두 포함하며, 전송된 이벤트의 첫 번째 토큰은 정렬 순서에 따라 항상 상품 토큰으로 저장되며, 두 번째 토큰이 CriteriaCoin이라는 점을 보장합니다.
 
 #### `DexPair`
+Pair ('DexPair')는 Factory(['DexFactory')에서 배포된 스마트 컨트랙트로 두 개의 ERC20 또는 KIP7 토큰의 조합 간에 거래가 가능합니다.
 
-Pair (`DexPair`) is a smart contract deployed from the Factory ([`DexFactory`](#dexfactory)) that enables trading between any combination of two ERC20 or KIP7 tokens.
+토큰 Pair에 대한 각 Dex 스마트 컨트랙트는 ERC-20/KIP-7 토큰 2개의 **reserves**로 구성된 [유동성 풀](#liquidity-pool)을 관리하며, 토큰 페어에 대한 최소 유동성은 `MINIMUM_LUIPIDITY` 상수를 통해 정의됩니다.
 
-Each Dex smart contract for the token pair manages a [liquidity pool](#liquidity-pool) made up of **reserves** of two ERC-20/KIP-7 tokens. The minimum liquidity for the pair of tokens is defined via `MINIMUM_LIQUIDITY` constant.
-
-The contract holds the following information in the variables: the reserves for both tokens, the timestamp of the latest block, the latest cumulative prices of both tokens, and the value of the `k` [invariant](#invariant) for the pair of tokens calculated as the product of both reserves.
+컨트랙트에는 두 토큰에 대한 적립금, 최신 블록의 타임스탬프, 두 토큰의 최근 누적 가격, 두 적립금의 곱으로 계산된 토큰 쌍의 `k`(k는 불변)값 등의 정보가 포함됩니다.
 
 ##### Year 2038 Problem <!--omit in toc-->
 
-Pair contracts have a [Year 2038 Problem](https://en.wikipedia.org/wiki/Year_2038_problem). This is due to the `_update` function (used to update reserves and price accumulators) casting the `block.timestamp` to `uint32`, which will wrap around in the year 2038.
+Pair contract들은 [Year 2038 Problem](https://en.wikipedia.org/wiki/Year_2038_problem)문제를 갖고 있습니다. 이 문제는 적립금과 물가 적립금을 갱신할 때 사용하는 `_update` 함수가 2038년에 마무리될 때 `block.timestamp`를 uint32로 캐스팅합니다.
 
-This only affects the `price0CumulativeLast` and `price1CumulativeLast` variables (latest cumulative prices of tokens in the pair), which are used for external price reporting. 
+이는 외부 가격 보고에 사용되는 `price0CumulativeLast` 및 `price1CumulativeLast` 변수(Pair 내 토큰의 최근 누적 가격)에만 영향을 미칩니다. 
 
-This is not detrimental to the DEX functionality. Pair contracts are still going to work after year 2038, but will contain a bug reporting wrong cumulative prices. Other smart contracts relying on this price reporting functionality would not function correctly after the year 2038.
+이것은 DEX 기능에 문제를 일으키지는 않습니다. Pair 계약은 2038년 이후에도 여전히 작동하지만 잘못된 누적 가격을 보고하는 버그도 포함할 것입니다. 이 가격 보고 기능에 의존하는 다른 스마트 컨트랙트는 2038년 이후 올바르게 작동하지 않을 것입니다.
 
 ##### Pair Contract: Events
 
-- When liquidity tokens are created via [`mint`](#mint), `Mint` event is emitted with the information about the sender address and the amount of each token in a token pair.
-- When liquidity tokens are destroyed via [`burn`](#burn), `Burn` event is emitted with the information about the sender address, the address that received the tokens, and the amount of each token in a token pair.
-- When a swap occurs via [`swap`](#swap) operation, `Swap` event is emitted with the addresses of the sender and the recipient, and the amount of tokens swapped and received.
-- When reserves are updated as a result of [`mint`](#mint), [`burn`](#burn), and [`swap`](#swap) operations, `Sync` event is emitted with the information about reserves of both tokens in a token pair.
+- 유동성 토큰이 [`mint`](#mint)를 통해 생성되면 토큰 Pair의 각 토큰의 송신자 주소와 양에 대한 정보와 함께 `Mint` 이벤트가 발생합니다.
+- [`burn`](#burn)을 통해 유동성 토큰이 소멸되면 토큰 Pair의 발신인 주소, 토큰을 수신한 주소, 각 토큰의 양에 대한 정보와 함께 `Burn` 이벤트가 발생합니다.
+- [`swap`](#swap)을 통해 토큰 간의 스왑이 발생하면 발신인과 수신인의 주소, 교환 및 수신된 토큰의 양과 함께 `swap` 이벤트가 발생합니다.
+- [`mint`(#mint), [`burn`(#burn), [`swap`(#swap) 작업의 결과로 적립금이 업데이트되면 토큰 Pair의 두 토큰의 적립금 정보와 함께 `Sync` 이벤트가 발생합니다.
 
 ##### Pair Contract: Functions
 
@@ -286,31 +234,12 @@ This is not detrimental to the DEX functionality. Pair contracts are still going
 
 |    Function     |                                                                                     Description                                                                                      |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `initialize`    | Initialize a pair contract. Given the addresses for two tokens, the [factory](#dexfactory) initializes the pair contract. The function is called when the pair contract is deployed. |
-| `getReserves`   | Return the reserves of both tokens within the pair as well as the timestamp of the latest block that contained an interaction for this token pair.                                   |
-| [`mint`](#mint) | Create pool tokens                                                                                                                                                                   |
-| [`burn`](#burn) | Destroy pool tokens                                                                                                                                                                  |
-| [`swap`](#swap) | Swap tokens                                                                                                                                                                          |
+| `initialize`    | Pair 컨트랙트인 Initialize는 두 토큰의 주소를 받으며, [factory](#dexfactory)가 Pair 컨트랙트를 초기화 합니다. 이 함수는 Pair가 배포될 때 실행됩니다. |
+| `getReserves`   | Pair에 reserve되어 있는 두 토큰의 주소와 최신 타임스탬프를 반환합니다.                                   |
+| [`mint`](#mint) | 풀 토큰(LP 토큰)을 생성합니다.                                                                                                                                                                   |
+| [`burn`](#burn) | 풀 토큰을 소멸시킵니다.                                                                                                                                                                  |
+| [`swap`](#swap) | 토큰간 스왑을 진행합니다.                                                                                                                                                                          |
 
-<!-- pdf table
-
---------------------------------------------------------------------------------------------------------------------------------------------------------------
-Function                    Description
---------------------------- ----------------------------------------------------------------------------------------------------------------------------------
-`initialize`                Initialize a pair contract. Given the addresses for two tokens, the [factory](#dexfactory) initializes the pair contract.
-                            The function is called when the pair contract is deployed.
-
-`getReserves`               Return the reserves of both tokens within the pair as well as the timestamp
-                            of the latest block that contained an interaction for this token pair.                                        
-
-[`mint`](#mint)             Create pool tokens                                                                                                                                                                            
-
-[`burn`](#burn)             Destroy pool tokens                                                                                                                                                                           
-
-[`swap`](#swap)             Swap tokens                                                                                                                                                                                   
---------------------------------------------------------------------------------------------------------------------------------------------------------------
-
--->
 
 Recovery mechanisms:
 
@@ -318,142 +247,113 @@ Recovery mechanisms:
 
 | Function |                                                                                                                                                          Description                                                                                                                                                          |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `skim`   | Force balances to match reserves. `skim` is a recovery mechanism in case the amount of tokens sent to a pair is enough to overflow the storages for the reserves, which might cause trades to fail. With `skim`, the user withdraws the difference between the current balance and the reserve.                               |
-| `sync`   | Force reserves to match balances. `sync` is a recovery mechanism in case one of the tokens asynchronously deflates the balance of a token pair. If this happens, trades will receive sub-optimal rates and no provider might be willing to rectify the situation,  making the pair stuck and in need of a recovery mechanism. |
-
-<!-- pdf table
-
------------------------------------------------------------------------------------------------------------------------------------------------------------
-Function                    Description
---------------------------- -------------------------------------------------------------------------------------------------------------------------------
-`skim`                      Force balances to match reserves.
-                            `skim` is a recovery mechanism in case the amount of tokens sent to a pair is enough to overflow the storages for the reserves,
-                            which might cause trades to fail. With `skim`, the user withdraws the difference between the current balance and the reserve.
-
-`sync`                      Force reserves to match balances.
-                            `sync` is a recovery mechanism in case one of the tokens asynchronously deflates the balance of a token pair. If this happens,
-                            trades will receive sub-optimal rates and no provider might be willing to rectify the situation,
-                            making the pair stuck and in need of a recovery mechanism.
------------------------------------------------------------------------------------------------------------------------------------------------------------
-
--->
+| `skim`   | 잔액을 reserve한 값과 일치 시킵니다. `skim`은 한 Pair로 전송되는 토큰의 양이 적립금의 저장소를 넘칠 정도로 많아 거래가 실패할 수 있는 경우를 대비한 복구 메커니즘입니다. `skim`을 사용하면 사용자는 현재 잔액과 reserve한 값의 차액을 인출합니다.                               |
+| `sync`   | 잔액을 일치시키기 위해 reserve값을 강제로 설정합니다. `sync`는 토큰 중 하나가 비동시적으로 토큰 Pair의 잔액을 감소시키는 경우를 대비한 복구 메커니즘입니다. 이렇게 되면 거래는 차선의 비율을 받게 되고 어떤 공급자도 이 상황을 수정하려고 하지 않을 수 있으므로 이 Pair은 동작을 못할 수 있기 때문에 복구 메커니즘이 필요합니다. |
 
 ###### `mint`
 
-The `mint` function in the `DexPair` contract is a low-level function that is called for the pair of tokens when liquidity is added via [`DexRouter`](#dexrouter) contract. The `Mint`, `Sync`, `Transfer` events are emitted.
+`DexPair` 컨트랙트에서의 `Mint` 함수는 [DexRouter](#DexRouter) 컨트랙트를 통해 유동성이 추가될 때 토큰 Pair에 대해 호출되는 하위 함수로, `Mint`, `Sync`, `Transfer` 이벤트가 발생합니다.
 
-If this is a new pool and there are no [LP tokens](#pool-tokens) yet, then the liquidity is calculated by subtracting `MINIMUM_LIQUIDITY` constant value from the product of minted amounts of both tokens:
+처음 생성되는 풀인 경우거나 [LP 토큰](#pool-tokens)이 없다면, 유동성은 두 토큰의 mint된 양의 곱에서 `MINIMUM_LUIPIDY` 상수 값을 차감하여 계산됩니다:
 
 ```
 sqrt(amount0 * amount1) - MINIMUM_LIQUIDITY
 ```
 
-The first `MINIMUM_LIQUIDITY` tokens in the pool are permanently locked.
+풀의 첫 번째 `MINIMUM_LIQUIDITY` 토큰이 영구적으로 잠깁니다.
 
-Otherwise, if the total supply of LP tokens in the pool is not zero, the liquidity is calculated like this: 
+위 상황이 아닌 풀에서 LP 토큰의 총 공급이 0이 아니면 유동성은 다음과 같이 계산됩니다:
 
-1. Multiply the minted amount of each token by the number of LP tokens in the pool and divide it by the reserve of this token.
-2. Pick the minimum of these two values:
+1. 각 토큰의 mint된 양에 풀의 LP 토큰 수를 곱하고 이 토큰의 reserve값으로 나눕니다.
+2. 다음 두 값 중 최소 값을 선택합니다:
    
    ```
    min((amount0 * _totalSupply) / _reserve0, (amount1 * _totalSupply) / _reserve1)
    ```
 
-Minting fee, when it is on, is calculated as follows:
-1. Find the [k invariant](#invariant), which is a product of the reserves of both tokens.
-2. Find the square roof of the k invariant (`rootK`).
-3. If the calculated value (`rootK`) is larger than it used to be (`rootKLast`):
+Minting 수수료는 설정되어 있을 때 다음과 같이 계산됩니다:
+1. 두 토큰의 reserve값의 곱인 `k`를 찾습니다.
+2. k 불변량의 sqaure roof인 (`rootK`)을 구합니다.
+4. 계산된 값(`rootK`)가 이전(`rootKLAST`)보다 클 경우:
 
-   - Find the growth in the amount of tokens, which is a product of the number of tokens in the pool (`totalSupply`) and the difference in square roots of the current and the previous values of the k invariant `(rootK - rootKLast)`.
-   - Find the value of `rootK * 5 + rootKLast`
-   - Find the liquidity as the quotient of these two values.
+   - 풀의 토큰 수(`totalSupply`)와 k 불변량 `(rootK - rootKLast)`의 현재와 이전 값의 제곱근 차이의 곱인 토큰 양의 증가를 구합니다.
+   - `rootK * 5 + rootKLAST` 값을 찾습니다.
+   - 이 두 값의 지수로 유동성을 구합니다.
 
 ###### `burn`
 
-The `burn` function in the `DexPair` contract is a low-level function that is called for the pair of tokens when liquidity is removed via [`DexRouter`](#dexrouter) contract. The `Burn`, `Sync`, and `Transfer` events are emitted.
+`DexPair`  `Burn` 함수는 [D컨트랙트의exRouter](#DexRouter) 컨트랙트를 통해 유동성을 제거할 때 토큰 Pair를 호출하는 하위 함수로, `Burn`, `Sync`, `Transfer` 이벤트가 발생합니다.
 
-For each token in the pair, the amount of tokens to burn is calculated as follows: find the product of the token balance and the liquidity for the pair of tokens, then divide it by the by the number of [LP tokens](#pool-tokens) in the pool. This ensures pro-rata distribution.
+Pair의 각 토큰에 대해 burn하는 토큰의 양은 다음과 같이 계산됩니다: 토큰 잔액의 곱과 토큰 Pair에 대한 유동성을 구한 다음 풀에 있는 [LP 토큰](#pool-tokens) 수로 나누면 pro-rata 분배가 보장됩니다.
 
 ###### `swap`
 
-The `swap` function in the `DexPair` contract is a low-level function that is called for the pair of tokens when tokens are swapped via [swap functions](#swapping-tokens) in the `DexRouter` contract. The `Swap` and `Sync` events are emitted.
+`DexPair` 컨트랙트의 스왑 기능은 `DexRouter` 컨트랙트의 [swap function](#swapping-tokens)을 통해 토큰을 스왑할 때 토큰 Pair에 대해 호출되는 하위 기능으로, `Swap` 및 `Sync` 이벤트가 발생합니다.
 
-The swap operation functions in such a way that the tokens must be transferred to pairs **before** the `swap` is called (with the exception of flash swaps). The `swap` function can only be called by another smart contract to ensure this operation is safe.
+스왑 작업은 토큰을 Pair로 옮겨야 (flash 스왑을 제외하고) `Swap`이 호출됩니다. 이 작업을 안전하게 수행하려면 다른 스마트 컨트랙트에서만 `Swap` 기능을 호출할 수 있습니다.
 
-Refer to [`DexRouter` contract](#swapping-tokens) for more details on how swap works.
+스왑 작동 방식에 대한 자세한 내용은 [`DexRouter` contract](#swapping-tokens)을 참조하십시오.
 
-**Warning**: `DEXswap` token (its `safeTransfer` and `safeTransferFrom` functions) can be used by any user to send tokens to other contracts. This can lead to re-entrancy attacks from contracts which are not handled by DEX. Refer to [`DEXswap`](#dexswap) for details.
+**Warning**: `DEXswap` 토큰(`safeTransfer` 및 `safeTransferFrom` 기능)은 사용자 누구나 다른 계약으로 토큰을 보낼 수 있으며, 이는 DEX에서 취급하지 않는 계약으로부터 re-entrancy 공격으로 이어질 수 있습니다. 자세한 내용은 [`DEXswap`](#dexswap)을 참조하십시오.
 
 ### Periphery
 
-Periphery smart contracts are designed to support domain-specific interactions with the [core](#core). These are external smart contracts that are useful, but not required for Dex to exist. New periphery contracts can always be deployed without migrating liquidity.
+Periphery 스마트 컨트랙트는 [core](#core)와의 도메인별 상호 작용을 지원하도록 설계되었습니다. 이는 유용하지만 Dex가 존재하는 데 필요한 것은 아닌 외부 스마트 계약입니다. 새로운 Periphery 컨트랙트는 유동성을 마이그레이션하지 않고 항상 배치할 수 있습니다.
 
-The **library** provides a variety of convenience functions for fetching data and pricing.
-The **router** fully supports all the basic requirements of a front-end offering trading and liquidity management functionality. It natively supports multi-pair trades and operations with KLAY.
+**library**는 데이터 가져오기 및 가격 책정을 위한 다양한 편의 기능을 제공합니다.
+**router**는 front-end offering 거래 및 유동성 관리 기능의 모든 기본 요구사항을 완벽하게 지원합니다. TokeNest에서는 KLAY 내의 다중 Pair거래 기능은 지원하지 않습니다.
 
 #### `DexRouter`
 
-The contract defines functions for adding and removing liquidity as well as swapping tokens. The contract calls low-level functions defined in the [`DexPair` contract](#dexpair).
+`DexRouter` 컨트랙트는 토큰 스왑뿐만 아니라 유동성 추가 및 제거 기능을 정의하고 있으며, 컨트랙트에는 [`DexPair`](#dexpair) 계약에서 정의된 하위 기능을 호출하고 있습니다.
 
 ##### Adding Liquidity
 
-Functions for adding liquidity for a pair of tokens:
+토큰 Pair에 대한 유동성 추가 기능:
 
-- `addLiquidity` adds liquidity to a pool of any pair of ERC20 or KIP7 tokens (ERC20/ERC20, KIP7/KIP7, ERC20/KIP7, or KIP7/ERC20)
-- `addLiquidityKLAY` adds liquidity to a pool of ERC20/WKLAY or KIP7/WKLAY tokens using KLAY (Klaytn native token)
+- `addLiquidity`는 ERC20 또는 KIP7 토큰 Pair(ERC20/ERC20, KIP7/KIP7, ERC20/KIP7 또는 KIP7/ERC20)의 풀에 유동성을 추가합니다.
 
-If a pair doesn't already exist, the [`DexFactory`](#dexfactory) contract creates a new pair with exactly the desired amount of tokens.
+Pair가 존재하지 않는 경우 오류를 발생시킵니다. `addLiquidity` 호출 전에는 [`DexFactory`](#dexfactory) 컨트랙트에서 `createPair`를 호출해 Pair를 생성한 후 유동성 풀을 추가해야 합니다.
 
-The functions return the amount of tokens sent to the pool as well as the amount of liquidity tokens that were minted via [`mint`](#mint) from the `DexPair` contract.
+이 함수는 풀로 전송된 토큰의 양뿐만 아니라 `DexPair` 컨트랙트에서 [`mint`](#mint)를 통해 발행된 유동성 토큰의 양을 반환합니다.
 
 ##### Removing Liquidity
 
-There are multiple functions for removing liquidity for a pair of tokens:
+Pair 토큰에 대한 유동성을 제거하기 위한 여러 가지 기능이 있습니다:
 
-- `removeLiquidity` removes liquidity from a pool of any pair of ERC20 or KIP7 tokens (ERC20/ERC20, KIP7/KIP7, ERC20/KIP7, or KIP7/ERC20)
-- `removeLiquidityKLAY` removes liquidity from a pool of ERC20/WKLAY or KIP7/WKLAY pair (and receive KLAY)
-- `removeLiquidityWithPermit` removes liquidity from a pool of any pair of ERC20 or KIP7 tokens (ERC20/ERC20, KIP7/KIP7, ERC20/KIP7, or KIP7/ERC20) without pre-approval
-- `removeLiquidityKLAYWithPermit` removes liquidity from a pool of ERC20/WKLAY or KIP7/WKLAY pair (and receive KLAY) without pre-approval
-- `removeLiquidityKLAYSupportingFeeOnTransferTokens`
-  - same as `removeLiquidityKLAY` but for transfers that take a fee
-- `removeLiquidityKLAYWithPermitSupportingFeeOnTransferTokens`
-  - same as `removeLiquidityKLAYWithPermit` but for transfers that take a fee
+- `removeLiquidity`는 ERC20 또는 KIP7 토큰 Pair(ERC20/ERC20, KIP7/KIP7, ERC20/KIP7 또는 KIP7/ERC20)의 풀에서 유동성을 제거합니다.
+- `removeLiquidityWithPermit`은 사전 승인 없이 ERC20 또는 KIP7 토큰 Pair(ERC20/ERC20, KIP7/KIP7, ERC20/KIP7 또는 KIP7/ERC20)의 풀에서 유동성을 제거합니다.
 
-The functions return the amount of tokens received from the pool.
+이 함수는 풀에서 받은 토큰의 양을 반환합니다.
 
 ##### Swapping tokens
 
+다른 종류의 스왑 작업을 위해 토큰을 스왑하는 여러 기능이 있습니다.
 There are multiple functions for swapping tokens for different kinds of swap operations.
 
-Functions for receiving tokens:
+토큰 수신 기능:
 
-- `swapTokensForExactTokens` receives the exact amount of output tokens for as few input tokens as possible
-- `swapTokensForExactKLAY` receives the exact amount of KLAY for as few input tokens as possible
-- `swapKLAYForExactTokens` receives the exact amount of tokens for as little KLAY as possible
+- `swapTokensForExactTokens` 가능한 한 적은 수의 입력 토큰에 대해 정확한 양의 출력 토큰을 수신합니다.
 
-Functions for sending tokens:
+토큰 송신 기능:
 
-- `swapExactTokensForTokens` swaps the exact amount of input tokens for as many output tokens as possible
-- `swapExactKLAYForTokens` swaps the exact amount of KLAY for as many output tokens as possible
-- `swapExactTokensForKLAY` swaps the exact amount of tokens for as much ETH as possible
+- `swapExactTokensForTokens` 가능한 한 많은 출력 토큰을 얻기 위한 입력 토큰의 정확한 양을 스왑합니다.
 - `swapExactTokensForTokensSupportingFeeOnTransferTokens`
-  - same as `swapExactTokensForTokens` but for transfers that take a fee
+  - `swapExactTokensForTokens` 기능과 동일하나, 전송 시 수수료를 부과함.
 - `swapExactKLAYForTokensSupportingFeeOnTransferTokens`
-  - same as `swapExactKLAYForTokens` but for transfers that take a fee
-- `swapExactTokensForKLAYSupportingFeeOnTransferTokens`
-  - same as `swapExactTokensForKLAY` but for transfers that take a fee
+  - `swapExactKLAYForTokens` 기능과 동일하나, 전송 시 수수료를 부과함.
 
-The swap operation functions in such a way that the tokens must be transferred to pairs **before** the `swap` is called (with the exception of flash swaps). The `swap` function can only be called by another smart contract to ensure this operation is safe.
+스왑 작업은 토큰이 swap이 호출되기 전에 Pair로 이전되어야 하는 방식으로 작동합니다. (flash 스왑을 제외한 경우). 이 swap 함수는 안전한 작업을 보장하기 위해 다른 스마트 컨트랙트에 의해서만 호출될 수 있습니다.
 
-The pairs check the balances of their tokens at the end of every interaction. Then, at the beginning of the next interaction, current balances are compared against the stored values to determine the amount of tokens that were sent by the current interactor.
+Pair들은 각 작업의 끝에서 자신들의 토큰 잔액을 확인합니다. 다음 작업의 시작에서 현재 잔액은 저장된 값과 비교되어 현재 작업에서 보낸 토큰 양을 결정하는 데 사용됩니다.
 
-One of the input parameters for swap functions is an array of token addresses (`path`) such as that for each consecutive pair of addresses, the pair contract should exist with enough liquidity. The first element is the input token, the last element is the output token. If there is no pair contract for the input and output tokens, then the `path` defines the intermediate pairs to perform the swap operation on.
+`Swap` 함수의 입력 매개변수 중 하나는 토큰 주소 배열(path)입니다. 이 배열은 각 연속적인 주소 Pair에 대한 것이며, 각 Pair의 컨트랙트는 충분한 유동성을 가지고 있어야 합니다. 첫 번째 요소는 입력 토큰이고, 마지막 요소는 출력 토큰입니다.
 
-**Warning**: `DEXswap` token (its `safeTransfer` and `safeTransferFrom` functions) can be used by any user to send tokens to other contracts. This can lead to re-entrancy attacks from contracts which are not handled by DEX. Refer to [`DEXswap`](#dexswap) for details.
+**Warning**: `DEXswap` 토큰(`safeTransfer` 및 `safeTransferFrom` 함수)은 어떤 사용자든 다른 컨트랙트에 토큰을 보낼 수 있는데, 이로 인해 DEX가 처리하지 않는 컨트랙트로부터의 재진입 공격이 발생할 수 있습니다. 자세한 내용은 [`DEXswap`](#dexswap)을 참조하십시오.
 
 #### `DexLibrary`
 
-The `DexLibrary` contract provides a variety of convenience functions for fetching data and pricing.
+`DexLibrary` 컨트랙트는 데이터 가져오기 및 가격 책정을 위한 다양한 편의 기능을 제공합니다.
 
 ##### Library Contract: Functions
 
@@ -461,502 +361,109 @@ The `DexLibrary` contract provides a variety of convenience functions for fetchi
 
 |            Function             |                                                                                                     Description                                                                                                      |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sortTokens`                    | Return sorted token addresses for the pair of tokens.                                                                                                                                                                |
-| `pairFor`                       | Calculate the CREATE2 address for a pair without making any external calls.                                                                                                                                          |
-| `getReserves`                   | Fetch and sort the reserves for a pair.                                                                                                                                                                              |
-| `quote`                         | Given the amount of one asset (`amountA`) and the pair reserves (`reserveA`, `reserveB`), return the equivalent amount of another asset (`amountB`). The `amountB` is calculated as `amountA * reserveB / reserveA`. |
-| [`getAmountOut`](#getamountout) | Given an input amount of an asset and pair reserves, return the maximum output amount of the other asset.                                                                                                            |
-| [`getAmountIn`](#getamountin)   | Given an output amount of an asset and pair reserves, return a required input amount of the other asset.                                                                                                             |
-| `getAmountsOut`                 | Perform chained `getAmountOut` calculations on any number of pairs.                                                                                                                                                  |
-| `getAmountsIn`                  | Perform chained `getAmountIn` calculations on any number of pairs.                                                                                                                                                   |
-
-<!-- pdf table
-
---------------------------------------------------------------------------------------------------------------------------
-Function                         Description
--------------------------------  -----------------------------------------------------------------------------------------
-`sortTokens`                     Return sorted token addresses for the pair of tokens.
-
-`pairFor`                        Calculate the CREATE2 address for a pair without making any external calls.
-
-`getReserves`                    Fetch and sort the reserves for a pair.                                    
-
-`quote`                          Given the amount of one asset (`amountA`) and the pair reserves (`reserveA`, `reserveB`),
-                                 return the equivalent amount of another asset (`amountB`).                                 
-                                 The `amountB` is calculated as `amountA * reserveB / reserveA`.
- 
-[`getAmountOut`](#getamountout)  Given an input amount of an asset and pair reserves,
-                                 return the maximum output amount of the other asset.                                                                                                            
-
-[`getAmountIn`](#getamountin)    Given an output amount of an asset and pair reserves,
-                                 return a required input amount of the other asset.                                                                                                             
-
-`getAmountsOut`                  Perform chained `getAmountOut` calculations on any number of pairs.        
-
-`getAmountsIn`                   Perform chained `getAmountIn` calculations on any number of pairs.
---------------------------------------------------------------------------------------------------------------------------
-
--->
+| `sortTokens`                    | 규칙에 맞춰 토큰들을 정렬한 뒤 Pair의 토큰들 주소를 반환합니다.                                                                                                                                                                 |
+| `getReserves`                   | 페어의 토큰들을 정렬하고 reserve값을 반환합니다.                                                                                                                                                                              |
+| `quote`                         | 하나의 자산 금액(`amountA`)과 Pair reserves(`reserveA`, `reserveB`)가 주어지면, 다른 자산의 해당 금액(`amountB`)을 반환합니다. `amountB`는 다음과 같이 계산됩니다: `amountA * reserveB / reserveA` |
+| [`getAmountOut`](#getamountout) | 자산과 Pair Reserves의 입력 금액이 주어지면 다른 자산의 최대 출력 금액을 반환합니다.                                                                                                            |
+| [`getAmountIn`](#getamountin)   | 자산의 출력 금액과 Pair Reserves가 주어지면 다른 자산의 필요한 입력 금액을 반환합니다.                                                                                                             |
+| `getAmountsOut`                 | 임의의 수의 Pair에서 연결된 `getAmountOut` 계산을 수행합니다.                                                                                                                                                  |
+| `getAmountsIn`                  | 임의의 수의 Pair에서 연결된 `getAmountIn` 계산을 수행합니다.                                                                                                                                                   |
 
 ###### `getAmountOut`
 
-Given an input amount of an asset (`amountIn`) and pair reserves (`reserveIn`, `reserveOut`), the function returns the maximum output amount of the other asset in the pair (`amountOut`).
+자산의 입력 금액(`amountIn`)과 Pair의 예약(`reserveIn`, `reserveOut`)이 주어지면, 이 함수는 Pair 내 다른 자산의 최대 출력 금액(`amountOut`)을 반환합니다.
 
-1. Find the input amount after the fee is calculated. Fee is 0.3%. The adjusted input value (`amountInWithFee`) can be calculated by multiplying the input amount by 997:
+1. 수수료가 계산된 후의 입력 금액을 찾습니다. 수수료는 0.3%이며, 조정된 입력 값(`amountInWithFee`)은 다음과 같이 계산됩니다:
    ```
    amountIn * 997
    ```
-2. Calculate the product of `amountInWithFee` and the reserve for the other token:
+2. `amountInWithFee`와 다른 토큰의 예약의 곱을 계산합니다: 
    ```
    amountInWithFee * reserveOut
    ```
-3. Find the sum of adjusted input value (`amountInWithFee`) and the reserve of input asset multiplied by 1000 (`reserveIn * 1000`):
+3. 조정된 입력 값(`amountInWithFee`)과 입력 자산의 예약에 1000을 곱한 값을 합산합니다:
    ```
    reserveIn * 1000 + amountInWithFee
    ```
-4. To find the output amount, divide the value calculated in step 2 by the value calculated in step 3:
+4. 출력 금액을 찾기 위해 2단계에서 계산된 값을 3단계에서 계산된 값으로 나눕니다:
    
    ```
    (amountInWithFee * reserveOut) / (reserveIn * 1000 + amountInWithFee)
    ```
 
-This is the maximum amount of the other asset that could be given for the provided input amount.
+이것은 주어진 입력 금액에 대해 제공할 수 있는 다른 자산의 최대 금액입니다.
 
 ###### `getAmountIn`
 
-Given an output amount of an asset (`amountOut`) and pair reserves (`reserveIn`, `reserveOut`), the functions returns the required input amount of the other asset (`amountIn`).
+주어진 자산의 출력 금액(`amountOut`)과 Pair의 예약(`reserveIn`, `reserveOut`)이 주어졌을 때, 이 함수는 필요한 다른 자산의 입력 금액(`amountIn`)을 반환합니다.
 
-1. Find the product of the output amount (`amountOut`) and the reserve of the other asset (`reserveIn`), then multiply it by `1000`:
+1. 출력 금액(`amountOut`)과 다른 자산의 예약(`reserveIn`)을 곱한 다음, 그 결과를 `1000`으로 곱합니다:
    ```
    reserveIn * amountOut * 1000
    ```
-2. Subtract the output amount (`amountOut`) from the reserve for this asset (`reserveOut`), then the multiply the result by 997 (the fee is 0.3%):
+2. 출력 금액(`amountOut`)을 해당 자산의 예약(`reserveOut`)에서 뺀 후, 그 결과를 997(수수료는 0.3%)로 곱합니다:
    ```
    (reserveOut - amountOut) * 997
    ```
-3. To find the required input amount, divide the value calculated in step 1 by the value calculated in step 2:
+3. 필요한 입력 금액을 찾기 위해 1단계에서 계산한 값을 2단계에서 계산한 값으로 나눕니다:
    ```
    (reserveIn * amountOut * 1000) / ((reserveOut - amountOut) * 997)
    ```
-
-### Farming and Staking
-
-Smart contracts for farming activities only support KIP7 standard tokens. Smart contracts for staking activities support both ERC20 and KIP7 standard tokens. Note that deflationary tokens and tokens with commission on transfer are not supported on DEX.
-
-Smart contracts for farming and staking are implemented using two different types of smart contracts. The main difference between the two is in the way the rewards are distributed across pools. 
-
-The `Farming` contract is a [Type 1 smart contract](#type-1-smart-contract). The pools in this type of contract are not independent from one another, there is a single reward pool for all the farming pools within this contract.
-
-The `Staking` contract is a [Type 2 smart contract](#type-2-smart-contract) with pools that are independant from each other in terms of reward distribution.
-
-#### `Farming`
-
-The contract that manages the farming operations with [LP tokens](#pool-tokens). To deploy the contract, the following is needed:
-
-- the address of the platform token, also called **PTN token** (`ptn`)
-- the address of the [multisignature contract](#multisignature-wallet), which will own the contract (`multisig`)
-- the number of PTN tokens created per block (`ptnPerBlock`)
-- the block at which the minting of PTN tokens starts (`startBlock`)
-
-The `Farming` contract defines two structures:
-
-- [`UserInfo`](#farming-userinfo) contains information about each user that stakes LP tokens
-- [`PoolInfo`](#farming-poolinfo) contains information about each pool
-
-##### Allocation Points
-
-The number of allocation points assigned to the farming pool is the number of platform tokens to distribute per block.
-Total number of allocation points (`totalAllocPoint`) in the farming contract is the sum of all allocation points in all farming pools.
-
-##### Farming: PoolInfo
-
-The structure contains the following information about the pool:
-
-- the address of the LP token contract (`lpToken`)
-- the bonus multiplier for the farming pool (`bonusMultiplier`)
-- the amount of LP tokens staked in the pool (`totalStaked`)
-- the last block in which the PTN tokens were distributed (`lastRewardBlock`)
-- the block after which the pool won't get any bonuses from the bonus multiplier for this farming pool (`bonusEndBlock`)
-- the accumulated PTN tokens per share multiplied by the `ACC_PRECISION` constant (`accPtnPerShare`)
-- the number of [allocation points](#allocation-points) assigned to the pool (`allocPoint`)
-
-##### Farming: UserInfo
-
-The structure contains the information about the amount of LP tokens that the user provided (`amount`) and their reward debt (`rewardDebt`).
-
-See [reward debt calculation](#farming-reward-debt-and-pending-reward).
-
-##### Farming: Events
-
-- When a new pool is added via `add`, `AddPool` is emitted with the id of the pool that was added and the following information: the number of its allocation points, the address of the token, the bonus multiplier for the farming pool, the block after which the pool won't get any bonuses.
-- When the number of PTN allocation points for a pool is updated via `set`, `SetPool` is emitted with the id of the pool and the number of its allocation points.
-- When rewards for a pool are [updated](#farming-updatepool), `UpdatePool` is emitted with the id of the pool that was updated and the following information: the last block in which PTN tokens are distributed, the number of LP tokens in the pool, and accumulated PTNs per share.
-- When LP tokens are deposited via `deposit`, `Deposit` is emitted with the information about the user that made the deposit, the amount of tokens that were deposited and the pool id.
-- When LP tokens are withdrawn via `withdraw` or `emergencyWithdraw`, `Withdraw` or `EmergencyWithdraw` is emitted with the information about the user that made the withdrawal, the amount of tokens that were withdrawn and the pool id.
-- When the reward per block is updated via `updatePtnPerBlock`, `UpdateRewardPerBlock` is emitted.
-- When the multiplier is updated for a pool via `updateMultiplier`, `UpdatePoolMultiplier` is emitted with the id of the pool for which the multiplier was updated and the new multiplier value.
-
-##### Farming: Reward Debt and Pending Reward
-
-**Pending reward** is the number of platform tokens that the user is entitled to receive but have not yet received. To find the pending reward, the `rewardDebt` is subtracted from the product of the amount of LP tokens the user provided (`amount`) and the accumulated PTN tokens per share (`accPtnPerShare`), divided by the `ACC_PRECISION` constant of the farming contract:
-
-```
-(user.amount * pool.accPtnPerShare) / ACC_PRECISION - user.rewardDebt
-```
-
-Whenever the user `deposit`s or `withdraw`s LP tokens to a pool, the following calculations happen:
-
-1. The `accPtnPerShare` and `lastRewardBlock`) values in the corresponding [pool](#farming-poolinfo) are updated using [`updatePool`](#farming-updatepool) function.
-2. The user receives the **pending reward**.
-3. The `amount` of LP tokens the user provided is updated.
-4. The total number of LP tokens in the pool (`totalStaked`) is updated.
-5. The `rewardDebt` for the user is updated. The reward debt is calculated as follows:
-   ```
-   (user.amount * pool.accPtnPerShare) / ACC_PRECISION
-   ```
-
-##### Farming: Functions
-
-<!-- github table -->
-
-|                 Function                  |                                                                                                          Description                                                                                                           |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `add`                                     | Add a new LP farming pool. Can only be called by the [`multisig` contract](#multisignature-wallet). A new pool is added based on the address of the LP token, the number of allocation points, and the pool reward multiplier. |
-| `deposit`                                 | Deposit the specified amount of LP tokens to the specified pool. See [reward debt and pending reward calculation](#farming-reward-debt-and-pending-reward).                                                                    |
-| `withdraw`                                | Withdraw the specified amount of LP tokens from the specified pool. See [reward debt and pending reward calculation](#farming-reward-debt-and-pending-reward).                                                                 |
-| `emergencyWithdraw`                       | Withdraw LP tokens from the specified pool without receiving the reward. This is only for emergencies.                                                                                                                         |
-| `set`                                     | Update the number of PTN allocation points for the given pool. Can only be called by the [`multisig` contract](#multisignature-wallet).                                                                                        |
-| [`updatePool`](#farming-updatepool)       | Update reward variables for the given pool.                                                                                                                                                                                    |
-| `massUpdatePools`                         | Update PTN reward for all active pools. The `updatePool` function is called on all pools that are active.                                                                                                                      |
-| `updateMultiplier`                        | Update reward multiplier for the specified pool. The `bonusMultiplier` in the `PoolInfo` is updated with the provided value.                                                                                                   |
-| `updatePtnPerBlock`                       | Update the number of PTN tokens created per block.                                                                                                                                                                             |
-| [`getMultiplier`](#farming-getmultiplier) | Return the reward multiplier between two given blocks for the specified pool.                                                                                                                                                  |
-
-<!-- pdf table 
-
-
----------------------------------------------------------------------------------------------------------------------------------------------
-Function                                  Description
------------------------------------------ ---------------------------------------------------------------------------------------------------
-`add`                                     Add a new LP farming pool. Can only be called by the [`multisig` contract](#multisignature-wallet).
-                                          A new pool is added based on the address of the LP token, the number of allocation points,
-                                          and the pool reward multiplier.
-
-`deposit`                                 Deposit the specified amount of LP tokens to the specified pool.
-                                          See [reward debt and pending reward calculation](#farming-reward-debt-and-pending-reward).
-
-`withdraw`                                Withdraw the specified amount of LP tokens from the specified pool.
-                                          See [reward debt and pending reward calculation](#farming-reward-debt-and-pending-reward).
-
-`emergencyWithdraw`                       Withdraw LP tokens from the specified pool without receiving the reward.
-                                          This is only for emergencies.
-
-`set`                                     Update the number of PTN allocation points for the given pool.
-                                          Can only be called by the [`multisig` contract](#multisignature-wallet).
-
-[`updatePool`](#farming-updatepool)       Update reward variables for the given pool.
-
-`massUpdatePools`                         Update PTN reward for all active pools.
-                                          The `updatePool` function is called on all pools that are active.
-
-`updateMultiplier`                        Update reward multiplier for the specified pool.
-                                          The `bonusMultiplier` in the `PoolInfo` is updated with the provided value.
-
-`updatePtnPerBlock`                       Update the number of PTN tokens created per block.
-
-[`getMultiplier`](#farming-getmultiplier) Return the reward multiplier between two given blocks for the specified pool.
-------------------------------------------------------------------------------
-
--->
-
-###### Farming: `updatePool`
-
-The function updates the reward variables for the given pool.
-
-1. Find the multiplier using [`getMultiplier`](#farming-getmultiplier).
-2. Calculate the pending reward:
-   - Find the product of the multiplier calculated in the previous step, the number of PTN tokens created per block (`ptnPerBlock`), and the number of allocation points in the pool (`allocPoint`).
-   - Divide the resulting value by the total number of allocation points (`totalAllocPoint`, which is the sum of all allocation points in all pools).
-3. Update the value for accumulated PTN tokens per share (`accPtnPerShare`):
-   - Find the product of pending reward and the `ACC_PRECISION` constant, then divide it by the total number of tokens staked in the pool.
-   - Add the resulting value to the current value of `accPtnPerShare`.
-
-Refer to [reward debt and pending reward](#farming-reward-debt-and-pending-reward) for more information.
-
-###### Farming: `getMultiplier`
-
-The function returns the reward multiplier for the farming pool for the given start (`_from`) and end (`_to`) blocks.
-
-The multiplier depends on whether the end block is before or after the `bonusEndBlock`:
-
-- If the end block occurs before `bonusEndBlock`, the multiplier is the product of the `bonusMultiplier` and the difference between the end block and the start block numbers (`_to - _from`).
-- If the start block occurs after `bonusEndBlock`, the multiplier is the difference between the end block and the start block numbers `(_to - _from)`.
-- In other cases, the multiplier is the sum of the following two values:
-  - the product of the the `bonusMultiplier` and the difference between `bonusEndBlock` and the start block numbers `(poolInfo[_pid].bonusEndBlock - _from)`
-  - the difference between the start block and `bonusEndBlock`
-
-
-#### `StakingFactory`
-
-Long-term staking allows users to stake the Dex token and earn other tokens as rewards.
-
-The contract deploys a new staking pool contract using [`deployPool`](#deploypool). The created contract is owned by the [`multisig` contract](#multisignature-wallet).
-
-The `StakingFactory` contract is responsible for deploying new [`StakingInitializable`](#stakinginitializable) contracts. The factory fully initializes the new pool contract after its deployment in `deployPool`, but the reward tokens **have to be sent** to the initialized pool **manually**.
-
-##### `deployPool`
-
-The contract for the new staking pool is deployed using `StakingInitializable` contract based on the following:
-
-- staked token address
-- reward token address
-- reward per block (in reward tokens)
-- the start and end blocks
-- the pool limit per user (in staked tokens)
-- the limit of the number of blocks available for a user
-- the multisig address
-
-**Note**: There are no restrictions on `startBlock` and `endBlock` values, meaning they can be set far in the future. Be advised to pay attention to the values set as the start and end blocks when deploying a pool.
-
-The function returns the address of a new staking pool contract.
-
-#### `StakingInitializable`
-
-The staking factory contract (`StakingFactory`) deploys the `StakingInitializable` contract, which is a new staking pool. Staking factory initializes the pool after it is deployed in the `deployPool` function.
-
-Note that the reward tokens have to be sent **manually** after the deployment. If the reward tokens are not sent to the pool before `startBlock`, the `deposit` and `withdraw` functions will not work correctly on the pool. In this case, each user will be able to deposit only once since they do not have available rewards yet. After that, `deposit` and `withdraw` functions will fail with `TransferHelper: TRANSFER_FAILED`. So the reward tokens have to be sent to the pool in the time between after it gets deployed and before the `startBlock` (the block when the pool starts).
-
-The contract defines two structures: 
-- [`UserInfo`](#staking-userinfo) contains information about each user that stakes tokens
-- [`PoolInfo`](#staking-poolinfo) contains information about each staking pool
-
-##### Staking: PoolInfo
-
-The structure contain the following information about the pool:
-
-- whether the pool is initialized 
-- the addresses of the staked and reward tokens
-- the blocks at which PTN minting starts and ends
-- the last block in which the pool was updated
-- whether there is a limit set for users
-- the max number of blocks available for each user after the start block
-- the pool limit (in staked token) per user
-- the accrued token per share
-- the amount of PTN tokens created per block
-- the total amount of staked tokens
-
-###### User Limit
-
-The `PoolInfo` structure of the Staking contract specifies whether or not there is a limit set for users (`userLimit`). If there is a limit, the `poolLimitPerUser` contains the max amount of staked tokens per user. If no limit is set, that value is zero. The `numberBlocksForUserLimit` contains information on how many blocks `poolLimitPerUser` is valid. For example, if `numberBlocksForUserLimit` is `86400` blocks, after `86400` blocks users will not have any limits.
-
-The user limit is checked with the [`hasUserLimit`](#staking-hasuserlimit) function and updated with the [`updatePoolLimitPerUser`](#staking-updatepoollimitperuser) function.
-
-##### Staking: UserInfo
-
-The structure contains the information about the amount of staked tokens that the user provided (`amount`) and their reward debt (`rewardDebt`).
-
-##### Staking: Events
-
-- `Deposit` with the information about the user that made the deposit and the deposited amount
-- `Withdraw` and `EmergencyWithdraw` with the information about the user that made the withdrawal and the withdrawn amount
-- `UpdatePool` with the information about the block that was last updated, the accrued token per share, and the total amount of staked tokens
-- `NewStartAndEndBlocks` with the blocks at which PTN minting starts and ends
-- `NewRewardPerBlock` with the amount of PTN tokens created per block
-- `NewPoolLimit` with the the information about pool limit
-- `RewardsStop` with the block at which to stop rewards
-- `TokenRecovery` with the information about the user that received recovered tokens and the amount of tokens recovered
-
-##### Staking: Reward Debt and Pending Reward
-
-**Pending reward** is the number of reward tokens that the user is entitled to receive but have not yet received. To find the pending reward, the `rewardDebt` is subtracted from the product of the amount tokens staked by the user and the accrued token per share for the given pool (`accTokenPerShare`), divided by the `PRECISION_FACTOR` constant of the staking contract:
-
-```
-(user.amount * pool.accTokenPerShare) / PRECISION_FACTOR - user.rewardDebt
-```
-
-Whenever the user `deposit`s or `withdraw`s staked tokens to a pool, the following calculations happen:
-
-1. The `accTokenPerShare` and `lastRewardBlock` values in the corresponding [pool](#staking-poolinfo) are updated using [`_updatePool`](#staking-_updatepool).
-2. The user receives the **pending reward**.
-3. The `amount` of staked tokens the user provided is updated.
-4. The total number of staked tokens in the pool (`totalStaked`) is updated.
-5. The `rewardDebt` for the user is updated. The reward debt is calculated as follows:
-   ```
-   (user.amount * pool.accTokenPerShare) / PRECISION_FACTOR
-   ```
-
-##### Staking: Functions
-
-|                           Function                            |                                                    Description                                                     |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `initialize`                                                  | Initialize the staking contract. The contract is owned by the [multisig contract](#multisignature-wallet).         |
-| `deposit`                                                     | Deposit staked tokens and collect reward tokens (if any).                                                          |
-| `withdraw`                                                    | Withdraw staked tokens and collect reward tokens (if any).                                                         |
-| `recoverToken`                                                | Recover tokens sent to the contract by mistake. Can only be called by [multisig contract](#multisignature-wallet). |
-| [`updatePoolLimitPerUser`](#staking-updatepoollimitperuser)   | Update pool limit per user. Can only be called by [multisig contract](#multisignature-wallet).                     |
-| [`updateRewardPerBlock`](#staking-updaterewardperblock)       | Update reward per block. Can only be called by [multisig contract](#multisignature-wallet).                        |
-| [`updateStartAndEndBlocks`](#staking-updatestartandendblocks) | Update the start and end blocks. Can only be called by [multisig contract](#multisignature-wallet).                |
-| [`_updatePool`](#staking-_updatepool)                         | Update reward variables for the given pool.                                                                        |
-| [`_getMultiplier`](#staking-_getmultiplier)                   | Return reward multiplier between two given blocks for the specified pool.                                          |
-| [`hasUserLimit`](#staking-hasuserlimit)                       | Check if the [user limit](#user-limit) is set.                                                                     |
-
-For emergency situations:
-
-<!-- github table -->
-
-|         Function          |                                                     Description                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `emergencyWithdraw`       | Withdraw staked tokens without receiving any rewards.                                                               |
-| `emergencyRewardWithdraw` | Transfer reward tokens to the specified address. Can only be called by [multisig contract](#multisignature-wallet). |
-| `stopReward`              | Stop pool rewards. Can only be called by [multisig contract](#multisignature-wallet).                               |
-
-
-
-<!-- pdf table
-
----------------------------------------------------------------------------------------------------------------------
-Function                   Description
--------------------------  ------------------------------------------------------------------------------------------
-`emergencyWithdraw`        Withdraw staked tokens without receiving any rewards.  
-
-`emergencyRewardWithdraw`  Transfer reward tokens to the specified address.
-                           Can only be called by [multisig contract](#multisignature-wallet).
-
-`stopReward`               Stop pool rewards. Can only be called by [multisig contract](#multisignature-wallet).
----------------------------------------------------------------------------------------------------------------------
-
--->
-
-###### Staking: `_getMultiplier`
-
-The functions returns the reward multiplier for the given start (`_from`) and end (`_to`) blocks.
-
-The multiplier depends on the relation between the `rewardEndBlock` (the block at which PTN minting ends) and `_from`/`_to` blocks:
-
-- If the `_to` occurs before `rewardEndBlock`, the multiplier is the difference between the end and the start block numbers (`_to - _from`).
-- If the `_from` occurs after `rewardEndBlock`, the multiplier is `0` (rewards are no longer updated).
-- In other cases, the multiplier is the difference between the `rewardEndBlock` and the start block numbers (`rewardEndBlock - _from`).
-
-
-###### Staking: `_updatePool`
-
-The function updates the reward variables for the given pool. If the current block number is higher than `rewardEndBlock` (the block at which PTN minting ends), the pool rewards are no longer updated.
-
-1. Find the multiplier using [`_getMultiplier`](#staking-_getmultiplier).
-2. Calculate the pending reward as the product of the multiplier calculated in the previous step and the reward per block (`rewardPerBlock`).
-3. Update the value for accrued token per share (`accTokenPerShare`):
-   
-   - Find the product of pending reward and the `PRECISION_FACTOR` constant, then divide it by the total amount of staked tokens in the pool.
-   - Add the resulting value to the current value of `accTokenPerShare`.
-
-Refer to [reward debt and pending reward](#staking-reward-debt-and-pending-reward) for more information.
-
-###### Staking: `updateStartAndEndBlocks`
-
-Update the start and end blocks before the rewards accumulation has started. The new `startBlock` value must be lower than the new `endBlock` and higher than the current block. 
-
-**Note**: There are no restrictions on `startBlock` and `endBlock` values, meaning they can be set far in the future. Be advised to pay attention to the values used to update `startBlock` and `endBlock`.
-
-This function can only be called by the contract owner ([multisig contract](#multisignature-wallet)).
-
-**Note**: `StakingFactory` uses the `stakedToken`, `rewardToken`, and `startBlock` parameters to derive the pool address when the pool is deployed in `deployPool`. Until the `startBlock` is reached, the owner can change the start block value with `updateStartAndEndBlocks`. Since `startBlock` is used to derive the pool address, if `startBlock` is updated, you would need to use the old `startBlock` value to derive the pool address.
-
-###### Staking: `updateRewardPerBlock`
-
-Update reward per block. The reward can only be updated before the reward accumulation has started.
-
-This function can only be called by the contract owner ([multisig contract](#multisignature-wallet)).
-
-**Note**: `StakingFactory` uses the `stakedToken`, `rewardToken`, and `startBlock` parameters to derive the pool  address when the pool is deployed in `deployPool`. Until the `startBlock` is reached, the owner can change the reward token value with `updateRewardPerBlock`.
-
-###### Staking: `hasUserLimit`
-
-The function checks whether the [user limit](#user-limit) is set for the staking pool.
-
-###### Staking: `updatePoolLimitPerUser`
-
-The function updates the [user limit](#user-limit) for the staking pool. Input parameters specifies whether the user limit remains in place, and the new value for `poolLimitPerUser`. The new limit must be higher than the current limit.
-
 ### Access
 
-[`Ownable`](#ownable) and [`AccessControl`](#accesscontrol) contracts regulate ownership and role-base access to DEX functionality.
+[`Ownable`](#ownable) 및  [`AccessControl`](#accesscontrol) 컨트랙트는 DEX 기능에 대한 소유권 및 역할 기반 액세스를 규제합니다.
 
-Owners and admins are privileged roles. Owners are allowed to modify the contract they own:
+소유자와 관리자는 특권적인 역할입니다. 소유자는 소유한 계약을 수정할 수 있습니다.
 
-- The owner of the [`Farming`](#farming) contract can update pool settings such as allocation points and rewards.
-- The owner of the [`StakingFactory](#stakingfactory) can deploy new pools.
-- The owner of the ` StakingFactoryPool` can withdraw reward tokens at any time.
+
 - The admin of the `PlatformToken` contract can change who gets to mint and burn tokens.
 
-This poses certain risks associated with the ownership being transferred or renounced, or admin roles being revoked. Check the warnings for the [admin role](#admin-role) and [owners](#ownable-functions).
+이러한 기능을 소유권이 양도되거나 포기되거나 관리자 역할이 취소될 때 발생할 수 있는 일부 위험을 유발할 수 있습니다. [admin role](#admin-role) 및 [owners](#ownable-functions)에 대한 경고를 확인하십시오.
 
 #### `Ownable`
 
-The `Ownable` contract provides basic access control mechanism: granting accounts exclusive access to specific functions. The account that was granted such exclusive access becomes an **owner** of the specified functionality.
+`Ownable` 컨트랙트는 기본적인 액세스 제어 메커니즘을 제공합니다. 특정 기능에 대한 독점 액세스를 계정에 부여합니다. 독점 액세스가 부여된 계정은 지정된 기능의 소유자가 됩니다.
 
-By default, the owner is the account that deploys the contract. The ownership can later be transferred to another account with `transferOwnership`.
+기본적으로 소유자는 컨트랙트를 배포한 계정입니다. 나중에 소유권은 `transferOwnership`를 사용하여 다른 계정으로 이전할 수 있습니다.
 
 ##### `Ownable`: Functions
 
-The `Ownable` contract has the following functions:
+`Ownable` 컨트랙트에는 다음과 같은 함수들이 있습니다:
 
 |      Function       |                                                Description                                                 |
 | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `owner`             | Return the address of the current owner.                                                                   |
-| `renounceOwnership` | Leave the contract without an owner. Can only be called by the current owner.                              |
-| `transferOwnership` | Transfer ownership of the contract to a new account (`newOwner`). Can only be called by the current owner. |
+| `owner`             | 현재 소유자의 주소를 반환합니다.                                                                   |
+| `renounceOwnership` | 소유권을 포기하고 계약을 소유자 없이 남깁니다. 현재 소유자만 호출할 수 있습니다.                              |
+| `transferOwnership` | 계약의 소유권을 새 계정(`newOwner`)에게 이전합니다. 현재 소유자만 호출할 수 있습니다. |
 
-**Warning**: Renouncing ownership (`renounceOwnership`) leaves the contract without an owner, thereby removing any functionality that is only available to the owner. It will no longer be possible to call `onlyOwner` and all the functions associated with the owner role.
 
-**Warning**: `TransferOwnership` should also be handled carefully. Transferring ownership to the wrong address (e.g. zero address) would also lead to all owner associated functionality being inaccessible.
+**Warning**: 소유권을 포기하면(`renounceOwnership`) 컨트랙트가 소유자 없이 남아, 소유자에게만 사용 가능한 기능이 제거됩니다. `onlyOwner`를 호출하고 소유자 역할과 관련된 모든 기능을 더 이상 호출할 수 없게 됩니다.
+
+**Warning**: `TransferOwnership` 역시 주의해서 처리해야 합니다. 소유권을 잘못된 주소(예: zero address)로 전송하면 소유자와 관련된 모든 기능에 액세스할 수 없게 됩니다.
 
 #### `AccessControl`
 
-The `AccessControl` contract implements role-based access.
+`AccessControl` 컨트랙트는 역할 기반 액세스를 구현합니다.
 
 <!-- github table  -->
 
 |    Function    |                                                                                        Description                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `hasRole`      | Check if an account has been granted the specified role.                                                                                                                                   |
-| `getRoleAdmin` | Return the admin role that controls the specified role.                                                                                                                                    |
-| `grantRole`    | Grant the specified role to an account. The caller has to have the admin role.                                                                                                             |
-| `revokeRole`   | Revoke the specified role from an account. The caller has to have the admin role. Note that the admin can revoke their own role. If this happens, DEX operator losses control over DEX. |
-| `renounceRole` | Revoke the specified role from the calling account. This a mechanism for accounts to lose their privileges if they are compromised, e.g. if a trusted device was misplaced.                |
-
-
-
-<!-- pdf table 
-
---------------------------------------------------------------------------------------------------
-Function        Description
---------------  ----------------------------------------------------------------------------------
-`hasRole`       Check if an account has been granted the specified role.  
-
-`getRoleAdmin`  Return the admin role that controls the specified role.
-
-`grantRole`     Grant the specified role to an account. The caller has to have the admin role.
-
-`revokeRole`    Revoke the specified role from an account. The caller has to have the admin role.
-                Note that the admin can revoke their own role. If this happens,
-                DEX operator losses control over DEX.
-
-`renounceRole`  Revoke the specified role from the calling account.
-                This a mechanism for accounts to lose their privileges if they are compromised,
-                e.g. if a trusted device was misplaced.
---------------------------------------------------------------------------------------------------
-
--->
+| `hasRole`      | 계정이 지정된 역할을 부여받았는지 확인합니다.                                                                                                                                   |
+| `getRoleAdmin` | 지정된 역할을 제어하는 관리자 역할을 반환합니다.                                                                                                                                    |
+| `grantRole`    | 지정된 역할을 계정에 부여합니다. 호출자는 관리자 역할이어야 합니다.                                                                                                             |
+| `revokeRole`   | 지정된 역할을 계정에서 취소합니다. 호출자는 관리자 역할이어야 합니다. |
+| `renounceRole` | 호출한 계정에서 지정된 역할을 취소합니다. 이는 계정이 침투되었을 때 권한을 상실하게 하는 메커니즘입니다. (예: 신뢰할 수 있는 장치가 잘못된 위치에 놓인 경우)                |
 
 ##### Roles
 
-Roles are referred to by their `bytes32` identifier. These should be exposed in the external API and be unique. The best way to achieve this is by using `public constant` hash digests:
+역할은 `bytes32` 식별자에 의해 참조됩니다. 이러한 역할은 외부 API에서 노출되어야 하며 고유해야 합니다. 이를 달성하는 가장 좋은 방법은 `public constant` 해시 다이제스트를 사용하는 것입니다:
 
 ```
 bytes32 public constant MY_ROLE = keccak256("MY_ROLE");
 ```
 
-Roles can be used to represent a set of permissions. To restrict access to a function call, use `hasRole`:
+역할은 권한 집합을 나타내는 데 사용할 수 있습니다. 함수 호출에 대한 액세스를 제한하려면 `hasRole`을 사용하십시오:
 
 ```
 function foo() public {
@@ -965,39 +472,29 @@ function foo() public {
 }
 ```
 
-Roles can be granted and revoked dynamically via the `grantRole` and `revokeRole` functions. Each role has an associated admin role, and only accounts that have the admin role can call `grantRole` and `revokeRole`.
+역할은 `grantRole` 및 `revokeRole` 함수를 통해 동적으로 부여 및 취소할 수 있습니다. 각 역할은 관리자 역할을 연결하고, 관리자 역할을 가진 계정만이 `grantRole` 및 `revokeRole`을 호출할 수 있습니다.
 
 ###### Admin role
 
-By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means that only accounts with this role will be able to grant or revoke other roles. More complex role relationships can be created by using `_setRoleAdmin`.
+기본적으로 모든 역할에 대한 관리자 역할은 `DEFAULT_ADMIN_ROLE`로 설정되어 있으며, 이는 이 역할을 부여하거나 취소할 수 있는 계정만 해당 역할을 가질 수 있음을 의미합니다. 보다 복잡한 역할 관계는 `_setRoleAdmin`을 사용하여 생성할 수 있습니다.
 
-The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to grant and revoke this role.
+`DEFAULT_ADMIN_ROLE`은 자체 관리자 역할이기도 합니다. 즉, 이 역할을 부여하고 취소할 수 있는 권한을 가지고 있습니다.
 
-**Warning**: With `revokeRole`, the admin can revoke their own role (any granted role). This leads to all functionality associated with the said role being inaccessible. For example, revoking or renouncing `MINTER_ROLE` makes all associated minting functionality inaccessible.
+**Warning**: `revokeRole`을 사용하면 관리자가 자신의 역할(부여된 역할)을 취소할 수 있습니다. 이로 인해 해당 역할과 관련된 모든 기능이 액세스할 수 없게 됩니다. 예를 들어, `MINTER_ROLE`을 취소하거나 포기하면 해당 역할과 관련된 모든 발행 기능에 액세스할 수 없게 됩니다.
 
-**Warning**: Renouncing or revoking `DEFAULT_ADMIN_ROLE` role leads to the admin no longer being able to grant or revoke any other roles.
+**Warning**: `DEFAULT_ADMIN_ROLE` 역할을 포기하거나 취소하면 관리자는 더 이상 다른 역할을 부여하거나 취소할 수 없게 됩니다.
 
 ## Security Concerns
 
-As mentioned above, there is no tokenomics defined in Dex protocol. Each instance of Dex would need to define and implement its own model, which might mean reworking or completely rewriting the smart contracts.
+위에서 언급한 대로 Dex 프로토콜에는 Tokenomics가 정의되어 있지 않습니다. Dex의 각 인스턴스는 자체 모델을 정의하고 구현해야 하므로 스마트 컨트랙트를 재작성하거나 완전히 다시 작성해야 할 수 있습니다.
 
-Reserves and balances should match. In case they do not (e.g. when adding tokens via transfers from outside of DEX platform), there are recovery mechanisms to force reserves and balances to match. These recovery mechanisms are `sync` and `skim` functions defined in [`DexPair` contract](#dexpair).
+예약금액(Reserves)과 잔액(balances)은 일치해야 합니다. 그런데, 일치하지 않을 때(예: DEX 플랫폼 외부에서 이체로 토큰을 추가할 때) 예약금액과 잔액을 일치시키기 위한 복구 메커니즘인 `sync` 및 `skim` 함수가 [`DexPair` contract](#dexpair) 컨트랙트에 정의되어 있습니다.
 
-A lot of functionality on DEX platform is owned and controlled via [`multisig` contract](#multisignature-wallet). This contract is a multisignature wallet that allows multiple parties to agree on transactions before they are executed. However, it is still a single contract controlling other functionality, which means it poses security risks associated with the certain degree of system centralization.
-
-DEX platform has emergency withdraw operations in place to fetch all rewards from a staking pool: `emergencyWithdraw` in both [staking](#stakinginitializable) and [farming](#farming) contracts, and `emergencyRewardWithdraw` in the [staking](#stakinginitializable) contract. The `emergencyRewardWithdraw` is controlled by the [`multisig` contract](#multisignature-wallet).
-
-There are also security concerns common with other decentralized systems. These are intentional attacks such as:
-
-- Sandwich attacks (front-running attack)
-- Scam tokens
-- Phishing attacks with similarly looking domains
-- Pump-and-dump scam
-- Arbitrage attacks
+DEX 플랫폼의 많은 기능은 [`multisig` contract](#multisignature-wallet) 계약을 통해 소유하고 제어됩니다. 이 계약은 다중 당사자가 트랜잭션에 동의한 후 실행되기 전에 여러 당사자가 합의하는 다중 서명 지갑입니다. 그러나 여전히 다른 기능을 제어하는 단일 컨트랙트이므로 일정 수준의 시스템 중앙화와 관련된 보안 리스크가 있을 수 있습니다.
 
 ## Calculations
 
-This section lists all important calculations within different contracts:
+이 섹션은 다른 컨트랙트 내에서 사용된 중요한 계산들을 나열합니다.
 
 - Pair contract: 
   - [calculate the amount of tokens to mint, minting fee](#mint)
@@ -1013,15 +510,3 @@ This section lists all important calculations within different contracts:
 - Library contract: 
   - [`getAmountIn`](#getamountin)
   - [`getAmountOut`](#getamountout)
-
-## Diagrams
-
-Refer to [Farming and Staking](#farming-and-staking) for details.
-
-### Type 1 Smart Contract
-
-![Smart contracts for farming (Type 1)](img/Staking-Type1.png)<!-- pdf option: { width=550px } -->
-
-### Type 2 Smart Contract
-
-![Smart contracts for staking (Type 2)](img/Staking-Type2.png)<!-- pdf option: { width=550px } -->
