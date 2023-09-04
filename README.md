@@ -42,7 +42,7 @@ TokeNest DEX Contracts는 다음과 같은 시나리오를 통해 동작합니�
 
 SmartContract의 자세한 동작과정에 대해선 아래 문서를 참조하세요.
 
-[dex-specification](./doc/dex-specification.md)
+[dex-specification](./docs/dex-specification.md)
 
 ## Deploy
 TokeNest를 배포하기 전, 필수로 .env.example 파일의 설명을 참고해 .env파일의 파라미터들을 입력해야 합니다.
