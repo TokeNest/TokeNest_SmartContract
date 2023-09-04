@@ -12,7 +12,7 @@ TokeNest_NextJs 리포지토리에서는 블록체인에서 발행된 토큰에 
 
 **TokeNest-SmartContract Repository**: [TokeNest-SmartContract](https://github.com/TokeNest/TokeNest_SmartContract)
 
-**TokeNest-NextJs Repository**: [TokeNest-NextJs](https://github.com/TokeNest/TokeNest_NextJs)
+**TokeNest-NextJs Repository**: [TokeNest-NextJs](https://github.com/TokeNest/TokeNest_Next.js)
 
 ## TokeNest-DEX Project
 
