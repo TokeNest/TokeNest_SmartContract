@@ -1,20 +1,5 @@
-# TokeNest
-#### 본 문서는 Klaytn-dex-contract의 문서를 기반으로 작성되었으며, TokeNest의 스펙에 맞춰 재 정리된 문서입니다.
-
-**TokeNest**은 물가 변동을 실시간으로 추적하고 가격을 조정하는 블록체인 DEX 플랫폼입니다. 
-
-기존 시장에서는 물가 변동이 발생해도 가격 조정이 어렵고, 소비자와 기업 간의 불만이 생기는 경우가 많았습니다. **TokeNest**는 블록체인 기술과 스마트 컨트랙트를 활용하여 이 문제를 해결하고자 이 프로젝트를 만들었습니다.
-
-TokeNest_SmartContract 리포지토리에선 Klaytn생태계에서 실물 상품과 대치되는 토큰발행 및 관리가 가능하며,
-TokeNest_NextJs 리포지토리에서는 블록체인에서 발행된 토큰에 맞춰 실시간 상품의 가격이 변하는 키오스크 시스템을 구현하였습니다.
-
-두 리포지토리를 활용하면 어떤 상품이든 토큰화하여 실시간 물가에 대응해 가격이 변동되는 시스템을 구현할 수 있습니다.
-
-**TokeNest-SmartContract Repository**: [TokeNest-SmartContract](https://github.com/TokeNest/TokeNest_SmartContract)
-
-**TokeNest-NextJs Repository**: [TokeNest-NextJs](https://github.com/TokeNest/TokeNest_Next.js)
-
 ## TokeNest-DEX Project
+#### 본 문서는 Klaytn-dex-contract의 문서를 기반으로 작성되었으며, TokeNest의 스펙에 맞춰 재 정리된 문서입니다.
 
 **TokeNest DEX Contracts**는 Klaytn 블록체인에서 상품의 실시간 시장 가격을 반영하여 금액을 산정할 수 있는 스마트 컨트랙트입니다. 
 
