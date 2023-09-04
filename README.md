@@ -14,7 +14,7 @@ By utilizing both repositories, you can implement a system where any product can
 
 **TokeNest-SmartContract Repository**: [TokeNest-SmartContract](https://github.com/TokeNest/TokeNest_SmartContract)
 
-**TokeNest-NextJs Repository**: [TokeNest-NextJs](https://github.com/TokeNest/TokeNest_NextJs)
+**TokeNest-NextJs Repository**: [TokeNest-NextJs](https://github.com/TokeNest/TokeNest_Next.js)
 
 ## TokeNest-DEX Project
 
@@ -44,7 +44,7 @@ TokeNest DEX Contracts operate through the following scenario:
 
 For a detailed explanation of how the SmartContract operates, please refer to the document.
 
-[document link](./)
+[document link](./docs/dex-specification.md)
 
 ## Deploy
 Before deployment, please, set up all required parameters in your .env file described in the .env.example.
@@ -140,7 +140,7 @@ to simulate the deployment process to the forked network.
 
 ## Documentation
 
-The repository provides a document describing the detailed execution mechanism of TokeNest-DEX as an example of a 'raw beans' product.
+The repository provides a document describing the detailed execution mechanism of TokeNest-DEX as an example of a 'raw beans' product. ([learn more](./docs/README.md))
 
 ## Want to Contribute to TokeNest DEX Contracts? <a id="want-to-contribute"></a>
 
@@ -197,7 +197,7 @@ TokeNest DEX Contracts는 다음과 같은 시나리오를 통해 동작합니�
 
 SmartContract의 자세한 동작과정에 대해선 아래 문서를 참조하세요.
 
-[문서링크](./)
+[문서링크](./doc/dex-specification.md)
 
 ## Deploy
 TokeNest를 배포하기 전, 필수로 .env.example 파일의 설명을 참고해 .env파일의 파라미터들을 입력해야 합니다.
@@ -296,8 +296,7 @@ hardhat test로 포크된 네트워크에서 배포하는 과정을 시뮬레이
 
 ## Documentation
 
-이 리포지토리는 TokeNest-DEX의 세부 실행 매커니즘을 `원두` 상품을 예시로 설명하는 문서를 제공하고 있습니다.
-//The repository contains Klaytn-DEX specification and audit reports ([learn more](./docs/README.md)).
+이 리포지토리는 TokeNest-DEX의 세부 실행 매커니즘을 `원두` 상품을 예시로 설명하는 문서를 제공하고 있습니다. ([문서 참조](./docs/README.md))
 
 ## Want to Contribute to TokeNest DEX Contracts? <a id="want-to-contribute"></a>
 
