@@ -6,7 +6,7 @@ TokeИest 프로젝트의 자세한 내용은 [TokeИest Organization](https://g
 
 이 리포지토리는 **Klaytn-Dex-Contract** 리포지토리를 복제(clone)하여 추가 작업한 결과물로, TokeИest의 스펙에 맞춰 스마트 컨트랙트와 설정을 수정하였습니다.
 
-2023/09/01 기준으로는 [TokeИest-DEX](#TokeИest-DEX)가 구현되어 있으며, 추후 [TokeИest-NFT](#TokeИest-NFT) 컨트랙트 부부 추가할 예정입니다.
+2023/09/01 기준으로는 [TokeИest-DEX](#TokeИest-DEX)가 구현되어 있으며, 추후 [TokeИest-NFT](#TokeИest-NFT) 컨트랙트 기능 추가할 예정입니다.
 
 # TokeИest-DEX
 #### ```본 문서는 Klaytn-dex-contract의 문서를 기반으로 작성되었으며, TokeИest의 스펙에 맞춰 재 정리된 문서입니다.```
