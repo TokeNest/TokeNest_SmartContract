@@ -7,19 +7,19 @@ linkcolor: #e3232c
 
 -->
 
-# TokeNest-DEX Specification<!-- omit in toc -->
+# TokeИest-DEX Specification<!-- omit in toc -->
 
 <!-- start intro: only for github, remove if creating a pdf -->
-#### 본 문서는 Klaytn-dex-contracts의 문서를 기반으로 작성되었으며, TokeNest의 스펙에 맞춰 재 정리된 문서입니다.
+#### 본 문서는 Klaytn-dex-contracts의 문서를 기반으로 작성되었으며, TokeИest의 스펙에 맞춰 재 정리된 문서입니다.
 
-이 문서에서는 TokeNest DEX의 스마트 컨트랙트들의 핵심 기능들에 대해 자세한 설명을 제공하며, 보안 문제에 대해 논의하고 프로젝트에 대한 일반적인 정보를 제공합니다.
+이 문서에서는 TokeИest DEX의 스마트 컨트랙트들의 핵심 기능들에 대해 자세한 설명을 제공하며, 보안 문제에 대해 논의하고 프로젝트에 대한 일반적인 정보를 제공합니다.
 
-Farming과 Staking 컨트랙트는 TokeNest의 핵심 기능에 포함되는 기능이 아니기 때문에 추후 DEX 고도화 개발 시 컨트랙트 개발할 예정입니다.
-
+Farming과 Staking 컨트랙트는 TokeИest의 핵심 기능에 포함되는 기능이 아니기 때문에 추후 DEX 고도화 개발 시 컨트랙트 개발할 예정입니다.
+  
 ## Contents<!-- omit in toc -->
 
 - [Introduction](#introduction)
-  - [Dex](#dex)
+  - [Dex](#dex) 
   - [DEX platform](#dex-platform)
   - [Constant Product Formula](#constant-product-formula)
   - [Token Types](#token-types)
@@ -163,9 +163,9 @@ Dex는 핵심 컨트랙트와 주변 컨트랙트로 구성된 이진 시스템�
 3. [Multisig](#multisignature-wallet)
 4. Dex Token
 5. Swap
-6. [Check for price fluctuations in TokeNest-NextJs Project](https://github.com/TokeNest/TokeNest_NextJs)
+6. [Check for price fluctuations in TokeИest-NextJs Project](https://github.com/TokeNest/TokeNest_NextJs)
 
-WKLAY의 경우 [Tokenest-dex-specification](#tokenest-dex-specification)에서 소개한 것과 같이 TokeNest의 핵심 기능에 부합하지 않는 기능으로 고도화 개발 시 구현할 예정입니다. 현재 Test코드에서 기존 WKLAY의 부분은 제외했으며, 필요 시 [Klaytn-dex-contract](https://github.com/klaytn/klaytn-dex-contracts)를 참조하시기 바랍니다.
+WKLAY의 경우 [TokeИest-dex-specification](#TokeИest-dex-specification)에서 소개한 것과 같이 TokeИest의 핵심 기능에 부합하지 않는 기능으로 고도화 개발 시 구현할 예정입니다. 현재 Test코드에서 기존 WKLAY의 부분은 제외했으며, 필요 시 [Klaytn-dex-contract](https://github.com/klaytn/klaytn-dex-contracts)를 참조하시기 바랍니다.
 
 
 ### Core
@@ -190,18 +190,18 @@ Factory 컨트랙트는 또한 프로토콜 전체 요금 수령자를 관리하
 
 |          Function           |                                                                                                                                                           Description                                                                                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`createPair`](#createpair) | TokeNest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다.                                                                                                                                                                                                                                                                                             |
+| [`createPair`](#createpair) | TokeИest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다.                                                                                                                                                                                                                                                                                             |
 | `getPair`                   | Pair를 구성하는 두 토큰을 입력받아 Pair가 존재할 시 주소를 반환합니다.                                                                                                                                                                                                                                                                                             |
 | `setFeeToSetter`            | 프로토콜 전체 요금 수취인(`feeTo` 주소)을 제어할 수 있는 주소를 설정합니다. 주소를 실수로 입력하면 프로토콜 전체 요금 수취인을 제어하기 때문에 요금 목적지에 대한 제어권을 잃게 됩니다.                                                                                                                                                                                                                                                                                             |
 | `setFeeTo`                  | 제공된 주소를 허용하여 프로토콜 전체 요금 수신자를 제어합니다. `setFeTo`는 프로토콜 전체 요금 수신자의 새 주소를 설정하는 `feeToSetter`에서만 호출할 수 있습니다. `setFeeTo` 기능에서 잘못된 주소를 설정하면 프로토콜 전체 요금이 손실됩니다.                                                                                                                                                                                                                                                                                             |
 | `allPairsLength`            | 생성된 Pair의 총 개수를 반환합니다.                                                                                                                                                                                                                                                                                             |
-| `getCriteriaCoins`                   | TokeNest의 기준 코인을 가져옵니다.                                                                                                                                                                                                                                                        |
-| `createCriteriaCoins`                   | TokeNest에서 사용할 기준 Stable코인을 지정합니다.                                                                                                                                                                                                                                                        |
+| `getCriteriaCoins`                   | TokeИest의 기준 코인을 가져옵니다.                                                                                                                                                                                                                                                        |
+| `createCriteriaCoins`                   | TokeИest에서 사용할 기준 Stable코인을 지정합니다.                                                                                                                                                                                                                                                        |
 | `getTokenValues`                   | pair배열을 파라미터로 받아 각 페어의 두 토큰간의 비율에 따른 가격을 계산해 반환합니다.                                                                                                                                                                                                                                                        |
 
 ###### `createPair`
 
-TokeNest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다. 사용자가 입력한 상품 토큰이 첫 번째 토큰으로 저장되고, CriteriaCoin이 두 번째 토큰으로 저장됩니다.
+TokeИest의 CriteriaCoins와 상품 토큰을 입력받아 두 토큰의 Pair가 존재하지 않을 시 Pair를 생성합니다. 사용자가 입력한 상품 토큰이 첫 번째 토큰으로 저장되고, CriteriaCoin이 두 번째 토큰으로 저장됩니다.
 
 또한 함수가 실행되면 `PairCreated` event를 발생시키며 Pair생성 시 동일한 토큰 쌍으로 시도 시 생성되지 않습니다.
 `pairCreated` 이벤트는 생성된 두 토큰의 주소, Pair의 주소, Pair의 기본 번호를 모두 포함하며, 전송된 이벤트의 첫 번째 토큰은 정렬 순서에 따라 항상 상품 토큰으로 저장되며, 두 번째 토큰이 CriteriaCoin이라는 점을 보장합니다.
@@ -301,7 +301,7 @@ Pair의 각 토큰에 대해 burn하는 토큰의 양은 다음과 같이 계산
 Periphery 스마트 컨트랙트는 [core](#core)와의 도메인별 상호 작용을 지원하도록 설계되었습니다. 이는 유용하지만 Dex가 존재하는 데 필요한 것은 아닌 외부 스마트 계약입니다. 새로운 Periphery 컨트랙트는 유동성을 마이그레이션하지 않고 항상 배치할 수 있습니다.
 
 **library**는 데이터 가져오기 및 가격 책정을 위한 다양한 편의 기능을 제공합니다.
-**router**는 front-end offering 거래 및 유동성 관리 기능의 모든 기본 요구사항을 완벽하게 지원합니다. TokeNest에서는 KLAY 내의 다중 Pair거래 기능은 지원하지 않습니다.
+**router**는 front-end offering 거래 및 유동성 관리 기능의 모든 기본 요구사항을 완벽하게 지원합니다. TokeИest에서는 KLAY 내의 다중 Pair거래 기능은 지원하지 않습니다.
 
 #### `DexRouter`
 
