@@ -8,6 +8,8 @@ TokeИest 프로젝트의 자세한 내용은 [TokeИest Organization](https://g
 
 2023/09/01 기준으로는 [TokeИest-DEX](#TokeИest-DEX)가 구현되어 있으며, 추후 [TokeИest-NFT](#TokeИest-NFT) 컨트랙트 기능 추가할 예정입니다.
 
+TokeNest dApps의 상세 설명은 [TokeNest-dApps](./docs/README.md)를 참고해 주세요.
+
 # TokeИest-DEX
 #### ```본 문서는 Klaytn-dex-contract의 문서를 기반으로 작성되었으며, TokeИest의 스펙에 맞춰 재 정리된 문서입니다.```
 [Klaytn-Dex-Contract Repository](https://github.com/klaytn/klaytn-dex-contracts)
