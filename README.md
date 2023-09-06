@@ -12,29 +12,6 @@ TokeИest 프로젝트의 자세한 내용은 [TokeИest Organization](https://g
 #### ```본 문서는 Klaytn-dex-contract의 문서를 기반으로 작성되었으며, TokeИest의 스펙에 맞춰 재 정리된 문서입니다.```
 [Klaytn-Dex-Contract Repository](https://github.com/klaytn/klaytn-dex-contracts)
 
-
-## Main Mechanism
-
-- **실시간 가격 조정**: 물가 변동을 실시간으로 추적하고 가격을 조정하여 공정한 거래를 제공합니다.
-- **토큰화된 실물 자산**: 물가 변동에 실시간으로 거래되는 토큰화된 실물 자산을 거래할 수 있습니다.
-- **신뢰성과 투명성**: 블록체인의 탈중앙화된 분산 장부로 모든 거래 내용을 투명하게 기록하고 공개합니다.
-- **유통과정 간소화**: 스마트 컨트랙트를 활용하여 거래를 자동화하고 유통 과정을 간소화합니다.
-
-## Scenario
-
-TokeИest DEX Contracts는 다음과 같은 시나리오를 통해 동작합니다:
-
-1. **토큰화**: 판매자는 실물 자산에 대응하는 토큰을 생성하고 블록체인에 상장합니다.
-2. **스왑**: 구매자는 DEX에서 토큰을 구매하기 위해 스테이블 코인을 사용하여 스왑합니다.
-3. **NFT 발급**: 구매자는 토큰을 실물 자산으로 교환하기 위해 NFT를 발급받습니다. (기능 구현중)
-4. **NFT 소각**: 거래가 완료되면 NFT를 소각하여 실물 자산을 수령합니다.  (기능 구현중)
-5. **완제품 생산**: 구매자는 실물 자산을 가공하여 완제품으로 생산하고 판매합니다.
-6. **키오스크 시스템**: 소비자는 실시간 물가를 추적하고 합리적인 가격으로 제품을 구매하기 위한 키오스크 시스템을 이용합니다. ([TokeИest-Next.js](https://github.com/TokeNest/TokeNest_Next.js))
-
-SmartContract의 자세한 동작과정에 대해선 아래 문서를 참조하세요.
-
-[dex-specification](./docs/dex-specification.md)
-
 ## Deploy
 TokeИest를 배포하기 전, 필수로 .env.example 파일의 설명을 참고해 .env파일의 파라미터들을 입력해야 합니다.
 
