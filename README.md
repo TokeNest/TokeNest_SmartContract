@@ -1,4 +1,4 @@
-# TokeИest
+# ♦️TokeИest♦️
 TokeИest 프로젝트의 자세한 내용은 [TokeИest Organization](https://github.com/TokeNest)를 참고해주세요.
 
 #  TokeИest-dApps
@@ -111,7 +111,7 @@ hardhat test로 포크된 네트워크에서 배포하는 과정을 시뮬레이
 
 
 ## TokeИest-NFT
-현재 개발 중입니다.
+⚠️현재 개발 중입니다.⚠️
 
 ## Documentation
 
